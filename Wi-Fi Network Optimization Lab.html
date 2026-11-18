@@ -1,0 +1,813 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Wi-Fi Network Optimization Lab</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,600;12..96,800&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@500&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<style>
+:root{
+  --abyss:#04102a; --deep:#071735; --ink:#0b1f48; --ink2:#12295c;
+  --azure:#2f7bff; --cyan:#4fd8ff; --peri:#9aa8ff; --peach:#ffb38a; --coral:#ff8a6b; --mint:#7ef0cf;
+  --text:#eaf2ff; --muted:#9bb0d6; --dim:#6479a6;
+  --line:rgba(154,168,255,.16); --line2:rgba(154,168,255,.32);
+  --disp:"Bricolage Grotesque",system-ui,sans-serif; --body:"IBM Plex Sans",system-ui,sans-serif; --mono:"IBM Plex Mono",ui-monospace,monospace;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth}
+body{background:var(--abyss);color:var(--text);font:16px/1.6 var(--body);overflow-x:hidden;-webkit-font-smoothing:antialiased}
+body::before{content:"";position:fixed;inset:0;z-index:-2;pointer-events:none;
+  background:radial-gradient(1100px 680px at 85% -10%,rgba(47,123,255,.22),transparent 60%),
+             radial-gradient(900px 600px at -15% 45%,rgba(154,168,255,.12),transparent 60%),
+             radial-gradient(800px 520px at 110% 95%,rgba(255,179,138,.08),transparent 60%)}
+a{color:var(--cyan)}
+:focus-visible{outline:2px solid var(--peach);outline-offset:3px;border-radius:6px}
+::selection{background:var(--azure);color:#fff}
+
+/* nav */
+nav{position:fixed;top:14px;left:50%;transform:translateX(-50%);z-index:50;display:flex;gap:2px;align-items:center;
+  padding:6px;border-radius:999px;background:rgba(7,23,53,.62);border:1px solid var(--line);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);max-width:calc(100vw - 24px);overflow-x:auto;scrollbar-width:none}
+nav::-webkit-scrollbar{display:none}
+nav .brand{display:flex;align-items:center;gap:8px;padding:6px 14px 6px 10px;font:600 15px var(--disp);color:var(--text);text-decoration:none;white-space:nowrap}
+nav .brand svg{width:20px;height:20px}
+nav a.l{color:var(--muted);text-decoration:none;font-size:13.5px;padding:7px 13px;border-radius:999px;white-space:nowrap;transition:color .2s,background .2s}
+nav a.l:hover{color:var(--text)}
+nav a.l.on{color:var(--abyss);background:linear-gradient(135deg,var(--cyan),var(--peri))}
+
+/* hero */
+#hero{position:relative;height:100vh;min-height:640px;overflow:hidden}
+#hero3d{position:absolute;inset:0;width:100%;height:100%;display:block}
+#hero::after{content:"";position:absolute;inset:0;pointer-events:none;background:linear-gradient(90deg,rgba(4,16,42,.92) 0%,rgba(4,16,42,.55) 38%,transparent 70%),linear-gradient(0deg,var(--abyss) 0%,transparent 28%)}
+.hero-copy{position:absolute;z-index:2;left:max(28px,calc(50vw - 600px));bottom:13vh;max-width:620px}
+.hero-copy .kicker{color:var(--peach);font-weight:500;margin-bottom:18px;display:flex;align-items:center;gap:10px}
+.hero-copy .kicker i{display:inline-block;width:28px;height:2px;background:var(--peach)}
+h1{font:800 clamp(48px,7.4vw,104px)/.92 var(--disp);letter-spacing:-.035em;margin-bottom:26px}
+h1 .wave{display:block;background:linear-gradient(100deg,var(--cyan) 0%,var(--azure) 45%,var(--peri) 75%,var(--peach) 100%);-webkit-background-clip:text;background-clip:text;color:transparent;background-size:200% 100%;animation:sweep 9s ease-in-out infinite alternate}
+@keyframes sweep{to{background-position:100% 0}}
+.hero-copy p{color:var(--muted);font-size:18px;max-width:52ch;margin-bottom:30px}
+.btns{display:flex;gap:12px;flex-wrap:wrap}
+.btn{appearance:none;border:1px solid var(--line2);background:rgba(18,41,92,.55);color:var(--text);font:500 14.5px var(--body);padding:12px 20px;border-radius:12px;cursor:pointer;text-decoration:none;display:inline-flex;align-items:center;gap:8px;transition:background .2s,border-color .2s,transform .15s}
+.btn:hover{border-color:var(--cyan);background:rgba(47,123,255,.22)}
+.btn:active{transform:scale(.97)}
+.btn.pri{background:linear-gradient(135deg,var(--peach),var(--coral));color:#2a0f08;border:0;font-weight:600}
+.btn.pri:hover{filter:brightness(1.08)}
+.btn.sm{padding:8px 13px;font-size:13.5px;border-radius:10px}
+.btn[disabled]{opacity:.45;pointer-events:none}
+.hero-facts{position:absolute;z-index:2;right:max(28px,calc(50vw - 600px));bottom:13vh;display:grid;gap:10px;width:250px}
+.fact{padding:14px 16px;border-radius:14px;background:rgba(7,23,53,.55);border:1px solid var(--line);backdrop-filter:blur(10px)}
+.fact b{display:block;font:600 24px var(--disp);color:var(--text)}
+.fact span{color:var(--muted);font-size:13px}
+
+/* sections */
+section.ch{max-width:1240px;margin:0 auto;padding:130px 28px 30px}
+.ch-head{display:grid;grid-template-columns:1fr 1fr;gap:40px;align-items:end;margin-bottom:38px}
+.ch-head .n{font:600 15px var(--disp);color:var(--peach);margin-bottom:10px}
+h2{font:800 clamp(36px,4.6vw,60px)/1 var(--disp);letter-spacing:-.03em}
+.ch-head p{color:var(--muted);max-width:62ch}
+h3{font:600 20px/1.2 var(--disp);letter-spacing:-.01em;margin-bottom:6px}
+.sub{color:var(--muted);font-size:14px;margin-bottom:16px}
+.panel{background:linear-gradient(180deg,rgba(18,41,92,.55),rgba(11,31,72,.42));border:1px solid var(--line);border-radius:22px;padding:24px;position:relative}
+.panel.flush{padding:0;overflow:hidden}
+.g2{display:grid;grid-template-columns:340px 1fr;gap:20px;align-items:start}
+.g2.rs330{grid-template-columns:1fr 330px}.g2.rs360{grid-template-columns:1fr 360px}
+.g2b{display:grid;grid-template-columns:1fr 1fr;gap:20px}
+.stack{display:grid;gap:20px;align-content:start}
+canvas.fit{display:block;width:100%;height:auto}
+
+/* controls */
+.ctl{margin-bottom:16px}
+.ctl label{display:flex;justify-content:space-between;font-size:13.5px;color:var(--muted);margin-bottom:6px}
+.ctl label output{font-family:var(--mono);color:var(--text);font-size:13px}
+input[type=range]{-webkit-appearance:none;appearance:none;width:100%;height:6px;border-radius:6px;background:linear-gradient(90deg,var(--azure),var(--cyan));outline:none;opacity:.9}
+input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:18px;height:18px;border-radius:50%;background:#fff;border:3px solid var(--azure);box-shadow:0 0 0 4px rgba(79,216,255,.18);cursor:pointer}
+input[type=range]::-moz-range-thumb{width:14px;height:14px;border-radius:50%;background:#fff;border:3px solid var(--azure);cursor:pointer}
+.seg{display:inline-flex;padding:3px;border-radius:12px;background:rgba(4,16,42,.6);border:1px solid var(--line);gap:2px;flex-wrap:wrap}
+.seg button{appearance:none;border:0;background:transparent;color:var(--muted);font:500 13.5px var(--body);padding:7px 12px;border-radius:9px;cursor:pointer}
+.seg button.on{background:var(--ink2);color:var(--text);box-shadow:inset 0 0 0 1px var(--line2)}
+.seg.full{display:flex}.seg.full button{flex:1}
+select{appearance:none;background:rgba(4,16,42,.7) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%239bb0d6'/%3E%3C/svg%3E") no-repeat right 10px center;border:1px solid var(--line2);color:var(--text);font:500 14px var(--body);padding:8px 28px 8px 11px;border-radius:10px;cursor:pointer}
+.row{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+
+/* readouts */
+.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:10px}
+.kpi{padding:13px 14px;border-radius:14px;background:rgba(4,16,42,.5);border:1px solid var(--line)}
+.kpi small{display:block;color:var(--muted);font-size:12.5px;margin-bottom:2px}
+.kpi b{font:600 24px/1.15 var(--disp);letter-spacing:-.01em}
+.kpi b em{font-style:normal;font-size:14px;color:var(--muted);font-weight:500;margin-left:3px}
+.kpi.hi{border-color:rgba(79,216,255,.45);background:linear-gradient(160deg,rgba(47,123,255,.25),rgba(4,16,42,.5))}
+.pill{display:inline-block;padding:4px 11px;border-radius:999px;font-size:13px;font-weight:600}
+.p-ex{background:rgba(126,240,207,.16);color:var(--mint)}.p-gd{background:rgba(79,216,255,.16);color:var(--cyan)}
+.p-fr{background:rgba(255,179,138,.16);color:var(--peach)}.p-pr{background:rgba(255,138,107,.2);color:var(--coral)}
+.formula{font-family:var(--mono);font-size:13px;color:var(--text);background:rgba(4,16,42,.6);border:1px solid var(--line);border-left:3px solid var(--cyan);border-radius:10px;padding:12px 14px;line-height:1.8;overflow-x:auto;white-space:nowrap}
+.formula span{color:var(--peach)}
+.legend{display:flex;gap:16px;flex-wrap:wrap;font-size:13px;color:var(--muted);margin-top:10px}
+.legend i{display:inline-block;width:12px;height:3px;border-radius:2px;margin-right:6px;vertical-align:middle}
+.note{font-size:13px;color:var(--dim);margin-top:10px}
+
+/* lab */
+.lab-wrap{position:relative}
+#labcv{cursor:crosshair;touch-action:none}
+#labcv.grab{cursor:grab}
+.tip{position:absolute;pointer-events:none;padding:8px 11px;border-radius:10px;background:rgba(4,16,42,.88);border:1px solid var(--line2);font-size:12.5px;line-height:1.5;white-space:nowrap;opacity:0;transition:opacity .12s;z-index:3}
+.tip b{font-family:var(--mono);font-weight:500;color:var(--cyan)}
+.scale{height:10px;border-radius:6px;margin-top:4px}
+.scale-l{display:flex;justify-content:space-between;font-size:12px;color:var(--dim);margin-top:4px;font-family:var(--mono)}
+.lab-bar{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;padding:14px 18px;border-top:1px solid var(--line)}
+.toast{margin-top:12px;padding:12px 14px;border-radius:12px;background:rgba(126,240,207,.1);border:1px solid rgba(126,240,207,.35);font-size:14px;display:none}
+.toast.show{display:block}
+.toast b{color:var(--mint)}
+.sel-ap{padding:14px;border-radius:14px;background:rgba(4,16,42,.5);border:1px solid var(--line)}
+.sel-ap .dot{width:12px;height:12px;border-radius:50%;display:inline-block}
+
+/* terrain */
+#terrain3d{display:block;width:100%;height:560px;cursor:grab;touch-action:none}
+#terrain3d:active{cursor:grabbing}
+.ter-ui{position:absolute;top:18px;left:18px;right:18px;display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap;pointer-events:none}
+.ter-ui>*{pointer-events:auto}
+.ter-hint{position:absolute;bottom:16px;left:18px;font-size:13px;color:var(--muted);background:rgba(4,16,42,.6);padding:6px 11px;border-radius:9px}
+.ter-key{position:absolute;bottom:16px;right:18px;width:240px;background:rgba(4,16,42,.6);padding:10px 12px;border-radius:12px;font-size:12.5px;color:var(--muted)}
+
+/* airtime */
+.lane-l{font-size:12px;fill:var(--muted)}
+
+/* playbook */
+.flow{display:grid;grid-template-columns:repeat(5,1fr);gap:0;margin-bottom:28px;position:relative}
+.flow .st{position:relative;padding:0 14px}
+.flow .st:not(:last-child)::after{content:"";position:absolute;top:27px;left:calc(50% + 32px);right:calc(-50% + 32px);height:2px;background:linear-gradient(90deg,var(--cyan),var(--peri))}
+.flow .ic{width:56px;height:56px;border-radius:50%;margin:0 auto 14px;display:grid;place-items:center;background:radial-gradient(circle at 30% 30%,var(--ink2),var(--deep));border:1px solid var(--line2);box-shadow:0 0 30px rgba(79,216,255,.18)}
+.flow .ic svg{width:26px;height:26px;stroke:var(--cyan);fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+.flow h4{text-align:center;font:600 17px var(--disp);margin-bottom:4px}
+.flow p{text-align:center;font-size:13.5px;color:var(--muted)}
+.tech{display:grid;grid-template-columns:repeat(4,1fr);gap:16px}
+.tc{padding:20px;border-radius:18px;background:rgba(11,31,72,.5);border:1px solid var(--line);display:flex;flex-direction:column}
+.tc h4{font:600 17px/1.25 var(--disp);margin-bottom:8px}
+.tc p{font-size:14px;color:var(--muted);flex:1}
+.tc .tgt{margin-top:12px;font-size:13px;color:var(--peach)}
+.imp{display:grid;grid-template-columns:auto 1fr;gap:4px 10px;margin-top:12px;font-size:12px;color:var(--dim);align-items:center}
+.imp .bar{height:5px;border-radius:4px;background:rgba(154,168,255,.15);position:relative;overflow:hidden}
+.imp .bar i{position:absolute;inset:0;right:auto;border-radius:4px;background:linear-gradient(90deg,var(--azure),var(--cyan))}
+.gens{display:grid;grid-template-columns:repeat(4,1fr);gap:0;border:1px solid var(--line);border-radius:20px;overflow:hidden;margin-top:28px}
+.gen{padding:20px;border-right:1px solid var(--line);position:relative}
+.gen:last-child{border-right:0;background:linear-gradient(160deg,rgba(47,123,255,.2),transparent)}
+.gen .y{font:600 13px var(--disp);color:var(--peach)}
+.gen h4{font:800 26px/1.1 var(--disp);margin:4px 0 2px}
+.gen .s{color:var(--muted);font-size:13px;margin-bottom:10px}
+.gen ul{list-style:none;font-size:13.5px;color:var(--text)}
+.gen li{padding:3px 0 3px 14px;position:relative}
+.gen li::before{content:"";position:absolute;left:0;top:11px;width:6px;height:6px;border-radius:50%;background:var(--cyan)}
+.refs{margin-top:40px;padding-top:24px;border-top:1px solid var(--line);display:grid;grid-template-columns:1fr 1fr;gap:6px 30px;font-size:13.5px;color:var(--muted)}
+footer{max-width:1240px;margin:60px auto 0;padding:30px 28px 50px;color:var(--dim);font-size:13.5px;display:flex;justify-content:space-between;flex-wrap:wrap;gap:10px;border-top:1px solid var(--line)}
+
+@media (max-width:1000px){
+  .g2,.g2.rs330,.g2.rs360,.g2b,.ch-head{grid-template-columns:1fr}
+  .tech{grid-template-columns:1fr 1fr}.gens{grid-template-columns:1fr 1fr}
+  .flow{grid-template-columns:1fr;gap:18px}.flow .st::after{display:none}
+  .hero-facts{display:none}
+  .refs{grid-template-columns:1fr}
+}
+@media (max-width:600px){#hero::after{background:linear-gradient(0deg,rgba(4,16,42,.95) 10%,rgba(4,16,42,.6) 60%,rgba(4,16,42,.3))}.tech,.gens{grid-template-columns:1fr}nav .brand span{display:none}section.ch{padding:100px 16px 20px}}
+@media (prefers-reduced-motion:reduce){h1 .wave{animation:none}html{scroll-behavior:auto}}
+</style>
+</head>
+<body>
+
+<nav aria-label="Sections">
+  <a class="brand" href="#hero"><svg viewBox="0 0 24 24" fill="none" stroke="url(#ng)" stroke-width="2.2" stroke-linecap="round"><defs><linearGradient id="ng" x1="0" x2="1"><stop offset="0" stop-color="#4fd8ff"/><stop offset="1" stop-color="#ffb38a"/></linearGradient></defs><path d="M2 9a15 15 0 0 1 20 0"/><path d="M5.5 12.5a10 10 0 0 1 13 0"/><path d="M9 16a5 5 0 0 1 6 0"/><circle cx="12" cy="19.5" r="1.2" fill="#4fd8ff" stroke="none"/></svg><span>Wi-Fi Optimization Lab</span></a>
+  <a class="l" href="#physics">Link budget</a>
+  <a class="l" href="#spectrum">Channels</a>
+  <a class="l" href="#lab">Coverage lab</a>
+  <a class="l" href="#terrain">3D field</a>
+  <a class="l" href="#beam">Beamforming</a>
+  <a class="l" href="#airtime">Airtime</a>
+  <a class="l" href="#playbook">Playbook</a>
+</nav>
+
+<header id="hero">
+  <canvas id="hero3d" aria-label="3D animation of an access point radiating signal to client devices"></canvas>
+  <div class="hero-copy">
+    <div class="kicker"><i></i>Wireless Networking project</div>
+    <h1>Wi-Fi network <span class="wave">optimization</span></h1>
+    <p>Coverage, capacity and interference pull against each other. This lab lets you work each one by hand: tune a link budget, plan channels, place access points on a floor plan, and watch the signal field respond in 3D.</p>
+    <div class="btns">
+      <a class="btn pri" href="#lab">Open the coverage lab</a>
+      <a class="btn" href="#physics">Start with the physics</a>
+    </div>
+  </div>
+  <div class="hero-facts">
+    <div class="fact"><b>−67 dBm</b><span>Signal target for voice and video</span></div>
+    <div class="fact"><b>25 dB</b><span>SNR needed for high-order QAM</span></div>
+    <div class="fact"><b>3 channels</b><span>Non-overlapping in 2.4 GHz: 1, 6, 11</span></div>
+  </div>
+</header>
+
+<main>
+<!-- LINK BUDGET -->
+<section class="ch" id="physics">
+  <div class="ch-head">
+    <div><div class="n">Part 1</div><h2>Link budget: where every dB goes</h2></div>
+    <p>Received signal is transmit power plus antenna gain, minus path loss. Loss grows with frequency, distance and every wall in the way. The signal-to-noise ratio then picks the modulation (MCS), and the MCS sets the data rate.</p>
+  </div>
+  <div class="g2">
+    <div class="panel">
+      <div class="ctl"><label>Band</label><div class="seg full" id="pBand"><button data-v="2.4">2.4 GHz</button><button data-v="5" class="on">5 GHz</button><button data-v="6">6 GHz</button></div></div>
+      <div class="ctl"><label>Channel width</label><div class="seg full" id="pBw"><button data-v="20" class="on">20</button><button data-v="40">40</button><button data-v="80">80</button><button data-v="160">160 MHz</button></div></div>
+      <div class="ctl"><label>Transmit power <output id="oTx"></output></label><input type="range" id="pTx" min="0" max="30" value="18"></div>
+      <div class="ctl"><label>Antenna gain <output id="oG"></output></label><input type="range" id="pG" min="0" max="8" value="3"></div>
+      <div class="ctl"><label>Distance <output id="oD"></output></label><input type="range" id="pD" min="1" max="60" value="15"></div>
+      <div class="ctl"><label>Path loss exponent n <output id="oN"></output></label><input type="range" id="pN" min="20" max="45" value="30"></div>
+      <div class="ctl"><label>Drywall walls <output id="oDw"></output></label><input type="range" id="pDw" min="0" max="4" value="1"></div>
+      <div class="ctl" style="margin:0"><label>Concrete walls <output id="oCc"></output></label><input type="range" id="pCc" min="0" max="3" value="0"></div>
+    </div>
+    <div class="stack">
+      <div class="kpis" style="grid-template-columns:repeat(auto-fit,minmax(180px,1fr))">
+        <div class="kpi hi"><small>Received signal</small><b id="kR"></b></div>
+        <div class="kpi"><small>Noise floor</small><b id="kNf"></b></div>
+        <div class="kpi"><small>SNR</small><b id="kS"></b></div>
+        <div class="kpi"><small>MCS</small><b id="kM"></b></div>
+        <div class="kpi"><small>PHY rate, 1 stream</small><b id="kRate"></b></div>
+        <div class="kpi"><small>Link quality</small><b id="kV" style="font-size:16px"></b></div>
+      </div>
+      <div class="formula">RSSI = P<sub>tx</sub> + G<sub>ant</sub> − [ <span>FSPL(1 m)</span> + 10·n·log<sub>10</sub>(d) + ΣL<sub>wall</sub> ]&nbsp;&nbsp;&nbsp; FSPL(1 m) = 20·log<sub>10</sub>(f<sub>MHz</sub>) − 27.55<br>Noise = −174 + 10·log<sub>10</sub>(B<sub>Hz</sub>) + NF(7 dB)<br>SNR = RSSI − Noise&nbsp;&nbsp;&nbsp; MCS = highest index whose SNR threshold is met</div>
+      <div class="panel" style="padding:18px 20px"><h3 style="font-size:16px">Reading the result</h3><p style="color:var(--muted);font-size:14px">Every 6 dB of extra loss halves the range. 5 GHz loses about 7 dB more than 2.4 GHz at 1 m and more per wall, which is why it needs more APs but rewards them with far more clean channels. Doubling channel width raises the noise floor by 3 dB, so wide channels need a stronger signal for the same MCS.</p></div>
+    </div>
+  </div>
+  <div style="height:20px"></div>
+  <div class="g2b">
+        <div class="panel"><h3>Budget waterfall</h3><div class="sub">Each bar adds or removes dB from the running total.</div><svg id="wf" viewBox="0 0 520 250" style="width:100%;height:auto"></svg></div>
+        <div class="panel"><h3>Signal vs distance</h3><div class="sub">All three bands with your settings.</div><canvas id="dist" class="fit"></canvas>
+          <div class="legend"><span><i style="background:var(--peach)"></i>2.4 GHz</span><span><i style="background:var(--cyan)"></i>5 GHz</span><span><i style="background:var(--peri)"></i>6 GHz</span></div></div>
+      </div>
+
+</section>
+
+<!-- SPECTRUM -->
+<section class="ch" id="spectrum">
+  <div class="ch-head">
+    <div><div class="n">Part 2</div><h2>Channel planning</h2></div>
+    <p>Two APs on the same channel take turns, so they split airtime (co-channel interference). Two APs on partly overlapping channels cannot decode each other, so they talk over each other and corrupt frames (adjacent-channel interference). The second case is worse.</p>
+  </div>
+  <div class="g2b">
+    <div class="panel">
+      <h3>2.4 GHz spectrum</h3><div class="sub">Pick a channel for each AP and see where their spectral masks collide.</div>
+      <canvas id="spec" class="fit"></canvas>
+      <div class="row" style="margin-top:14px" id="specSel"></div>
+      <div class="row" style="margin-top:12px"><button class="btn sm" id="pr1">Use 1 / 6 / 11</button><button class="btn sm" id="pr2">Try 1 / 3 / 6</button><button class="btn sm" id="pr3">All on 6</button></div>
+      <div id="specOut" style="margin-top:14px;display:grid;gap:6px;font-size:14px"></div>
+    </div>
+    <div class="panel">
+      <h3>The channel width trade</h3><div class="sub">Doubling width doubles peak rate but halves the number of clean channels and raises the noise floor 3 dB.</div>
+      <div class="seg" id="wBand" style="margin-bottom:10px"><button data-v="5" class="on">5 GHz (U.S.)</button><button data-v="6">6 GHz</button></div>
+      <svg id="wch" viewBox="0 0 560 300" style="width:100%;height:auto"></svg>
+      <div class="legend"><span><i style="background:var(--cyan)"></i>Non-overlapping channels</span><span><i style="background:var(--peach)"></i>Peak rate per stream (Mbps)</span></div>
+      <p class="note">Dense venues usually stay at 20 to 40 MHz so neighbouring APs can each get their own channel.</p>
+    </div>
+  </div>
+</section>
+
+<!-- LAB -->
+<section class="ch" id="lab">
+  <div class="ch-head">
+    <div><div class="n">Part 3</div><h2>Floor-plan coverage lab</h2></div>
+    <p>A 40 × 25 m office with drywall, glass, brick and concrete. Drag access points, change their channels and power, or let the optimizer search placements with simulated annealing. Coverage, SINR and co-channel conflicts update as you work.</p>
+  </div>
+  <div class="g2 rs330">
+    <div class="panel flush">
+      <div class="lab-wrap"><canvas id="labcv" class="fit" aria-label="Floor plan heatmap"></canvas><div class="tip" id="labTip"></div></div>
+      <div class="lab-bar">
+        <div style="flex:1;min-width:240px"><div class="scale" id="labScale"></div><div class="scale-l" id="labScaleL"></div></div>
+        <div class="legend" style="margin:0"><span><i style="background:#c9d6f5;height:5px"></i>Concrete</span><span><i style="background:var(--peach)"></i>Brick</span><span><i style="background:#eaf2ff;opacity:.7"></i>Drywall</span><span><i style="background:var(--mint)"></i>Glass</span></div>
+      </div>
+    </div>
+    <div class="stack">
+      <div class="panel" style="padding:18px">
+        <div class="ctl"><label>Band</label><div class="seg full" id="lBand"><button data-v="2.4" class="on">2.4 GHz</button><button data-v="5">5 GHz</button><button data-v="6">6 GHz</button></div></div>
+        <div class="ctl"><label>Show</label><div class="seg full" id="lView"><button data-v="rssi" class="on">Signal</button><button data-v="sinr">SINR</button><button data-v="serve">Serving AP</button></div></div>
+        <div class="row" style="margin-bottom:12px"><button class="btn sm" id="lAdd">Add AP</button><button class="btn sm" id="lRem">Remove AP</button><button class="btn sm" id="lCh">Auto channels</button><button class="btn sm" id="lReset">Reset</button></div>
+        <button class="btn pri" id="lOpt" style="width:100%;justify-content:center">Optimize placement and power</button>
+        <div class="toast" id="lToast"></div>
+      </div>
+      <div class="sel-ap" id="selAp"></div>
+      <div class="kpis" style="grid-template-columns:1fr 1fr">
+        <div class="kpi hi"><small>Area at −67 dBm or better</small><b id="sCov"></b></div>
+        <div class="kpi"><small>Dead zones (below −80)</small><b id="sDead"></b></div>
+        <div class="kpi"><small>Median SINR</small><b id="sSinr"></b></div>
+        <div class="kpi"><small>Avg PHY rate, 20 MHz</small><b id="sRate"></b></div>
+        <div class="kpi" style="grid-column:1/-1"><small>Co-channel conflicts (same-channel APs that hear each other above −82 dBm)</small><b id="sCci"></b></div>
+      </div>
+    </div>
+  </div>
+  <p class="note">Model: log-distance path loss with n = 3, 3 dBi antennas, fixed per-wall attenuation per band, light deterministic shadowing, noise floor −94 dBm. Built for illustration, not as a site survey replacement.</p>
+</section>
+
+<!-- TERRAIN -->
+<section class="ch" id="terrain">
+  <div class="ch-head">
+    <div><div class="n">Part 4</div><h2>The signal field in 3D</h2></div>
+    <p>The same floor and the same APs from the lab, drawn as a height field. Peaks are strong signal and valleys are dead zones. The translucent plane sits at the service target, so everything above it is good enough for voice and video. Change the lab and this view follows.</p>
+  </div>
+  <div class="panel flush" style="position:relative">
+    <canvas id="terrain3d" aria-label="3D signal height map"></canvas>
+    <div class="ter-ui">
+      <div class="seg" id="tMetric"><button data-v="rssi" class="on">Signal</button><button data-v="sinr">SINR</button></div>
+      <div class="row"><button class="btn sm" id="tPlane">Hide target plane</button><button class="btn sm" id="tRot">Pause rotation</button></div>
+    </div>
+    <div class="ter-hint">Drag to orbit, scroll to zoom</div>
+    <div class="ter-key"><div class="scale" id="terScale"></div><div class="scale-l" id="terScaleL"></div></div>
+  </div>
+</section>
+
+<!-- BEAMFORMING -->
+<section class="ch" id="beam">
+  <div class="ch-head">
+    <div><div class="n">Part 5</div><h2>Beamforming and MU-MIMO</h2></div>
+    <p>An AP with several antennas can delay each one slightly so the waves add up toward a client and cancel elsewhere. Superimpose two sets of delays and the AP serves two clients at the same time (MU-MIMO), each with weak leakage toward the other.</p>
+  </div>
+  <div class="g2 rs360">
+    <div class="stack"><div class="panel flush"><canvas id="beamcv" class="fit" aria-label="Wave interference from an antenna array"></canvas></div>
+      <div class="kpis">
+        <div class="kpi hi"><small>Array gain</small><b id="bG"></b></div>
+        <div class="kpi"><small>Beamwidth</small><b id="bW"></b></div>
+        <div class="kpi" ><small id="bXl">Leakage toward client B</small><b id="bX"></b></div>
+      </div>
+    </div>
+    <div class="stack">
+      <div class="panel" style="padding:18px">
+        <div class="ctl"><label>Clients served at once</label><div class="seg full" id="bU"><button data-v="1" class="on">One (beamforming)</button><button data-v="2">Two (MU-MIMO)</button></div></div>
+        <div class="ctl"><label>Antenna elements <output id="obN"></output></label><input type="range" id="bN" min="1" max="8" value="8"></div>
+        <div class="ctl"><label>Element spacing <output id="obD"></output></label><input type="range" id="bD" min="25" max="100" value="50"></div>
+        <div class="ctl"><label>Client A angle <output id="obA"></output></label><input type="range" id="bA" min="-70" max="70" value="22"></div>
+        <div class="ctl" id="bBwrap" style="margin:0;opacity:.4"><label>Client B angle <output id="obB"></output></label><input type="range" id="bB" min="-70" max="70" value="-38" disabled></div>
+      </div>
+      <div class="panel" style="padding:16px"><h3 style="font-size:16px">Radiation pattern</h3><canvas id="polar" class="fit"></canvas></div>
+    </div>
+  </div>
+</section>
+
+<!-- AIRTIME -->
+<section class="ch" id="airtime">
+  <div class="ch-head">
+    <div><div class="n">Part 6</div><h2>Airtime and contention</h2></div>
+    <p>Wi-Fi is half-duplex and shared. Before sending, each station waits a random backoff (CSMA/CA). As more stations compete, two pick the same slot more often and collide. Wi-Fi 6 OFDMA sidesteps part of this by letting the AP schedule several clients in one transmission.</p>
+  </div>
+  <div class="g2b">
+    <div class="panel">
+      <h3>Collision probability vs stations</h3><div class="sub">Bianchi model, fixed contention window, saturated stations.</div>
+      <canvas id="bian" class="fit"></canvas>
+      <div class="ctl" style="margin-top:14px"><label>Active stations <output id="oSt"></output></label><input type="range" id="aN" min="1" max="50" value="12"></div>
+      <div class="row"><span style="color:var(--muted);font-size:13.5px">Contention window</span><div class="seg" id="aCw"><button data-v="15" class="on">15</button><button data-v="31">31</button><button data-v="63">63</button></div></div>
+      <div class="kpis" style="margin-top:14px">
+        <div class="kpi"><small>Collision chance</small><b id="aPc"></b></div>
+        <div class="kpi"><small>Airtime efficiency</small><b id="aS"></b></div>
+        <div class="kpi hi"><small>Per-station share</small><b id="aSh"></b></div>
+      </div>
+    </div>
+    <div class="panel">
+      <h3>Four small packets: OFDM vs OFDMA</h3><div class="sub">Same four 300-byte frames. Legacy Wi-Fi sends them one after another, each paying full overhead. OFDMA splits the channel into resource units and sends them together.</div>
+      <svg id="ofdma" viewBox="0 0 600 280" style="width:100%;height:auto"></svg>
+      <div class="kpis" style="margin-top:8px">
+        <div class="kpi"><small>OFDM total</small><b>900<em>µs</em></b></div>
+        <div class="kpi hi"><small>OFDMA total</small><b>363<em>µs</em></b></div>
+        <div class="kpi"><small>Speedup</small><b>2.5×</b></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- PLAYBOOK -->
+<section class="ch" id="playbook">
+  <div class="ch-head">
+    <div><div class="n">Part 7</div><h2>The optimization playbook</h2></div>
+    <p>Optimization is a loop, not a one-time setting. Measure, design for the hardest client, configure, prove it with a validation survey, then keep watching as the building and the clients change.</p>
+  </div>
+  <div class="flow">
+    <div class="st"><div class="ic"><svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="M21 21l-5-5"/></svg></div><h4>Survey</h4><p>Walls, clients, apps and existing RF noise</p></div>
+    <div class="st"><div class="ic"><svg viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 21V9"/></svg></div><h4>Design</h4><p>AP count from capacity, not just coverage</p></div>
+    <div class="st"><div class="ic"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3M5 5l2 2M17 17l2 2M5 19l2-2M17 7l2-2"/></svg></div><h4>Configure</h4><p>Channels, power, width, rates, roaming</p></div>
+    <div class="st"><div class="ic"><svg viewBox="0 0 24 24"><path d="M4 12l5 5L20 6"/></svg></div><h4>Validate</h4><p>Walk the floor: −67 dBm, 25 dB SNR</p></div>
+    <div class="st"><div class="ic"><svg viewBox="0 0 24 24"><path d="M3 17l5-6 4 4 8-9"/><path d="M14 6h6v6"/></svg></div><h4>Monitor</h4><p>Utilization under 50%, retries under 10%</p></div>
+  </div>
+  <div class="tech" id="techGrid"></div>
+  <div class="gens">
+    <div class="gen"><div class="y">2009</div><h4>Wi-Fi 4</h4><div class="s">802.11n</div><ul><li>MIMO, up to 4 streams</li><li>40 MHz channels</li><li>600 Mbps peak</li></ul></div>
+    <div class="gen"><div class="y">2013</div><h4>Wi-Fi 5</h4><div class="s">802.11ac</div><ul><li>80 and 160 MHz, 5 GHz only</li><li>256-QAM</li><li>Downlink MU-MIMO</li></ul></div>
+    <div class="gen"><div class="y">2019 / 2020</div><h4>Wi-Fi 6 / 6E</h4><div class="s">802.11ax</div><ul><li>OFDMA and uplink MU-MIMO</li><li>BSS coloring, target wake time</li><li>1024-QAM, 6 GHz band (6E)</li></ul></div>
+    <div class="gen"><div class="y">2024</div><h4>Wi-Fi 7</h4><div class="s">802.11be</div><ul><li>320 MHz channels in 6 GHz</li><li>4096-QAM</li><li>Multi-link operation (MLO)</li></ul></div>
+  </div>
+  <div class="refs">
+    <div>IEEE Std 802.11ax-2021, High Efficiency WLAN.</div>
+    <div>IEEE Std 802.11be-2024, Extremely High Throughput.</div>
+    <div>G. Bianchi, "Performance analysis of the IEEE 802.11 distributed coordination function," IEEE JSAC, 2000.</div>
+    <div>T. S. Rappaport, Wireless Communications: Principles and Practice, 2nd ed.</div>
+    <div>ITU-R P.1238, Propagation data for indoor radio systems.</div>
+    <div>C. A. Balanis, Antenna Theory: Analysis and Design (array factor).</div>
+  </div>
+</section>
+</main>
+
+<footer><span>Wi-Fi Network Optimization Lab. Wireless Networking course project, Stevens Institute of Technology.</span><span>Prepared by Noor</span></footer>
+
+<script>
+"use strict";
+const $=s=>document.querySelector(s),$$=s=>[...document.querySelectorAll(s)];
+const clamp=(v,a,b)=>Math.max(a,Math.min(b,v)),lerp=(a,b,t)=>a+(b-a)*t;
+const DPR=Math.min(window.devicePixelRatio||1,2);
+function fitCanvas(cv,w,h){cv.width=w*DPR;cv.height=h*DPR;const c=cv.getContext('2d');c.setTransform(DPR,0,0,DPR,0,0);return c}
+function hex2rgb(h){const n=parseInt(h.slice(1),16);return[n>>16&255,n>>8&255,n&255]}
+function makeRamp(stops){const s=stops.map(([v,h])=>[v,hex2rgb(h)]);return v=>{if(v<=s[0][0])return s[0][1];for(let i=1;i<s.length;i++)if(v<=s[i][0]){const t=(v-s[i-1][0])/(s[i][0]-s[i-1][0]),a=s[i-1][1],b=s[i][1];return[a[0]+(b[0]-a[0])*t,a[1]+(b[1]-a[1])*t,a[2]+(b[2]-a[2])*t]}return s[s.length-1][1]}}
+const RSSI_STOPS=[[-90,'#ff8a6b'],[-80,'#c4486a'],[-70,'#4b2f86'],[-62,'#2c5fe0'],[-50,'#36b5f2'],[-35,'#d4f8ff']];
+const SINR_STOPS=[[0,'#ff8a6b'],[10,'#c4486a'],[18,'#4b2f86'],[25,'#2c5fe0'],[33,'#36b5f2'],[45,'#d4f8ff']];
+const rssiRamp=makeRamp(RSSI_STOPS),sinrRamp=makeRamp(SINR_STOPS);
+function gradCSS(stops){const a=stops[0][0],b=stops[stops.length-1][0];return'linear-gradient(90deg,'+stops.map(([v,h])=>h+' '+((v-a)/(b-a)*100).toFixed(1)+'%').join(',')+')'}
+function segOn(el,cb){el.addEventListener('click',e=>{const b=e.target.closest('button');if(!b||b.disabled)return;[...el.children].forEach(x=>x.classList.toggle('on',x===b));cb(b.dataset.v)})}
+const reduceMotion=matchMedia('(prefers-reduced-motion: reduce)').matches;
+function onVisible(el,cb){new IntersectionObserver(e=>cb(e[0].isIntersecting),{rootMargin:'100px'}).observe(el)}
+
+/* ---------- RF constants ---------- */
+const BANDS={
+ '2.4':{f:2437,ch:[1,6,11],all:[1,2,3,4,5,6,7,8,9,10,11],wall:{drywall:3,glass:3,brick:8,concrete:12},pmax:20},
+ '5':{f:5500,ch:[36,40,44,48,149,153,157,161],all:[36,40,44,48,52,56,60,64,100,104,108,112,116,120,124,128,132,136,140,144,149,153,157,161,165],wall:{drywall:4,glass:5,brick:12,concrete:18},pmax:23},
+ '6':{f:6105,ch:[5,21,37,53,69,85,101,117],all:[5,21,37,53,69,85,101,117,133,149,165,181,197,213,229],wall:{drywall:5,glass:6,brick:14,concrete:22},pmax:23}};
+const fspl1=f=>20*Math.log10(f)-27.55;
+const MCS=[[2,8.6,'BPSK 1/2'],[5,17.2,'QPSK 1/2'],[9,25.8,'QPSK 3/4'],[11,34.4,'16-QAM 1/2'],[15,51.6,'16-QAM 3/4'],[18,68.8,'64-QAM 2/3'],[20,77.4,'64-QAM 3/4'],[25,86,'64-QAM 5/6'],[29,103.2,'256-QAM 3/4'],[31,114.7,'256-QAM 5/6'],[34,129,'1024-QAM 3/4'],[37,143.4,'1024-QAM 5/6']];
+const WMULT={20:1,40:2,80:4.19,160:8.38};
+function mcsFor(s){let m=-1;for(let i=0;i<MCS.length;i++)if(s>=MCS[i][0])m=i;return m}
+
+/* ================= HERO 3D ================= */
+function glowTex(){const c=document.createElement('canvas');c.width=c.height=128;const g=c.getContext('2d');const r=g.createRadialGradient(64,64,0,64,64,64);r.addColorStop(0,'rgba(255,255,255,1)');r.addColorStop(.22,'rgba(255,255,255,.55)');r.addColorStop(1,'rgba(255,255,255,0)');g.fillStyle=r;g.fillRect(0,0,128,128);return new THREE.CanvasTexture(c)}
+let GT=null;
+function initHero(){
+ const cv=$('#hero3d');const R=new THREE.WebGLRenderer({canvas:cv,antialias:true,alpha:true});R.setPixelRatio(DPR);
+ const S=new THREE.Scene();S.fog=new THREE.FogExp2(0x04102a,.03);
+ const cam=new THREE.PerspectiveCamera(42,1,.1,300);
+ S.add(new THREE.AmbientLight(0x5a78c0,.75));const dl=new THREE.DirectionalLight(0xcfe0ff,1.2);dl.position.set(6,12,8);S.add(dl);
+ const rim=new THREE.PointLight(0xffb38a,1.6,40);rim.position.set(-8,4,-6);S.add(rim);
+ const cl=new THREE.PointLight(0x4fd8ff,2.4,25);cl.position.set(0,2.5,2.5);S.add(cl);
+ const grid=new THREE.GridHelper(120,120,0x2f7bff,0x132a5e);grid.material.transparent=true;grid.material.opacity=.3;S.add(grid);
+ const R0=new THREE.Group();R0.position.x=7;S.add(R0);
+ const body=new THREE.Mesh(new THREE.BoxGeometry(3.4,.5,2.2),new THREE.MeshStandardMaterial({color:0x0c1d44,metalness:.75,roughness:.28}));body.position.y=.45;R0.add(body);
+ const plate=new THREE.Mesh(new THREE.BoxGeometry(3.1,.04,1.9),new THREE.MeshStandardMaterial({color:0x24418a,metalness:.9,roughness:.12,emissive:0x0a1a48}));plate.position.y=.72;R0.add(plate);
+ const ledM=new THREE.MeshBasicMaterial({color:0x4fd8ff});for(let i=0;i<5;i++){const l=new THREE.Mesh(new THREE.BoxGeometry(.18,.05,.02),ledM);l.position.set(-.6+i*.3,.45,1.11);R0.add(l)}
+ const antM=new THREE.MeshStandardMaterial({color:0x10224a,metalness:.6,roughness:.35});const tips=[];
+ [-1.25,-.42,.42,1.25].forEach((x,i)=>{const g=new THREE.Group();g.position.set(x,.6,-.95);g.rotation.z=-x*.14;g.rotation.x=-.12;const a=new THREE.Mesh(new THREE.CylinderGeometry(.07,.09,2.3,16),antM);a.position.y=1.15;g.add(a);const sp=new THREE.Sprite(new THREE.SpriteMaterial({map:GT,color:i%2?0x9aa8ff:0x4fd8ff,blending:THREE.AdditiveBlending,transparent:true,depthWrite:false}));sp.position.y=2.35;g.add(sp);tips.push(sp);R0.add(g)});
+ const halo=new THREE.Sprite(new THREE.SpriteMaterial({map:GT,color:0x2f7bff,blending:THREE.AdditiveBlending,transparent:true,opacity:.55,depthWrite:false}));halo.scale.set(10,10,1);halo.position.y=1;R0.add(halo);
+ const shells=[],hemi=new THREE.SphereGeometry(1,48,18,0,Math.PI*2,0,Math.PI/2);
+ for(let i=0;i<6;i++){const s=new THREE.Mesh(hemi,new THREE.MeshBasicMaterial({color:i%2?0x9aa8ff:0x4fd8ff,wireframe:true,transparent:true,opacity:.3,blending:THREE.AdditiveBlending,depthWrite:false}));s.position.y=.5;R0.add(s);shells.push({m:s,ph:i/6})}
+ const rings=[],rg=new THREE.RingGeometry(.97,1,128);
+ for(let i=0;i<4;i++){const r=new THREE.Mesh(rg,new THREE.MeshBasicMaterial({color:0xffb38a,transparent:true,opacity:.4,side:THREE.DoubleSide,blending:THREE.AdditiveBlending,depthWrite:false}));r.rotation.x=-Math.PI/2;r.position.y=.02;R0.add(r);rings.push({m:r,ph:i/4})}
+ const clients=[],cg=new THREE.OctahedronGeometry(.32,0);
+ const cpos=[[-5,1.6,3],[12,2.4,4],[15,1.2,-5],[-2,3,-9],[7,1.4,10],[-8,2,-2],[10,3.4,-11],[18,2.2,6]];
+ cpos.forEach((p,i)=>{const col=[0x4fd8ff,0x9aa8ff,0xffb38a,0x7ef0cf][i%4];const m=new THREE.Mesh(cg,new THREE.MeshStandardMaterial({color:col,emissive:col,emissiveIntensity:.6,metalness:.3,roughness:.3}));m.position.set(...p);S.add(m);const sp=new THREE.Sprite(new THREE.SpriteMaterial({map:GT,color:col,blending:THREE.AdditiveBlending,transparent:true,opacity:.7,depthWrite:false}));sp.scale.set(2.2,2.2,1);m.add(sp);clients.push({m,base:p[1],ph:i})});
+ const PK=110,pg=new THREE.BufferGeometry(),pp=new Float32Array(PK*3);pg.setAttribute('position',new THREE.BufferAttribute(pp,3));
+ S.add(new THREE.Points(pg,new THREE.PointsMaterial({size:.34,map:GT,color:0xcff3ff,transparent:true,blending:THREE.AdditiveBlending,depthWrite:false})));
+ const pk=[...Array(PK)].map(()=>({c:Math.floor(Math.random()*cpos.length),t:Math.random(),v:.15+Math.random()*.25,up:Math.random()<.4}));
+ const DN=1400,dg=new THREE.BufferGeometry(),dp=new Float32Array(DN*3);for(let i=0;i<DN;i++){const r=6+Math.random()*42,a=Math.random()*Math.PI*2;dp[i*3]=Math.cos(a)*r;dp[i*3+1]=Math.random()*14;dp[i*3+2]=Math.sin(a)*r}
+ dg.setAttribute('position',new THREE.BufferAttribute(dp,3));const dust=new THREE.Points(dg,new THREE.PointsMaterial({size:.08,color:0x9aa8ff,transparent:true,opacity:.5,depthWrite:false}));S.add(dust);
+ let mx=0,my=0;addEventListener('pointermove',e=>{mx=e.clientX/innerWidth-.5;my=e.clientY/innerHeight-.5});
+ function size(){const w=cv.clientWidth,h=cv.clientHeight;R.setSize(w,h,false);cam.aspect=w/h;cam.updateProjectionMatrix()}size();addEventListener('resize',size);
+ let vis=true;onVisible(cv,v=>vis=v);const clock=new THREE.Clock();
+ const ant=new THREE.Vector3();
+ function frame(){const t=reduceMotion?4:clock.getElapsedTime();
+  const a=t*.05+mx*.5+.6;cam.position.set(7+Math.sin(a)*19,6.5-my*3,Math.cos(a)*18);cam.lookAt(3.5,2,0);
+  shells.forEach(s=>{const p=(t*.12+s.ph)%1,k=.8+p*16;s.m.scale.set(k,k,k);s.m.material.opacity=.2*(1-p)*(p<.05?p*20:1)});
+  rings.forEach(r=>{const p=(t*.1+r.ph)%1,k=1+p*22;r.m.scale.set(k,k,k);r.m.material.opacity=.45*(1-p)});
+  tips.forEach((s,i)=>{const k=.7+.35*Math.sin(t*3+i);s.scale.set(k,k,k)});
+  clients.forEach(c=>{c.m.position.y=c.base+Math.sin(t*1.2+c.ph)*.25;c.m.rotation.y=t*.8+c.ph});
+  ant.set(7,2.6,-.9);
+  for(let i=0;i<PK;i++){const q=pk[i];q.t+=q.v*.016;if(q.t>1){q.t=0;q.c=Math.floor(Math.random()*clients.length);q.up=Math.random()<.4}
+   const e=clients[q.c].m.position,u=q.up?1-q.t:q.t,o=1-u,cx=(ant.x+e.x)/2,cy=Math.max(ant.y,e.y)+3.5,cz=(ant.z+e.z)/2;
+   pp[i*3]=o*o*ant.x+2*o*u*cx+u*u*e.x;pp[i*3+1]=o*o*ant.y+2*o*u*cy+u*u*e.y;pp[i*3+2]=o*o*ant.z+2*o*u*cz+u*u*e.z}
+  pg.attributes.position.needsUpdate=true;dust.rotation.y=t*.01;R.render(S,cam)}
+ (function loop(){requestAnimationFrame(loop);if(vis&&!reduceMotion)frame()})();
+ frame();
+}
+
+/* ================= LINK BUDGET ================= */
+const PH={band:'5',bw:20};
+const distCtx=fitCanvas($('#dist'),480,250);
+function phy(band,tx,g,n,d,dw,cc){const B=BANDS[band],f1=fspl1(B.f),dlos=10*n*Math.log10(Math.max(d,1)),wl=dw*B.wall.drywall+cc*B.wall.concrete;return{f1,dlos,wl,rssi:tx+g-f1-dlos-wl}}
+function updPhy(){
+ const tx=+$('#pTx').value,g=+$('#pG').value,d=+$('#pD').value,n=$('#pN').value/10,dw=+$('#pDw').value,cc=+$('#pCc').value;
+ $('#oTx').textContent=tx+' dBm';$('#oG').textContent=g+' dBi';$('#oD').textContent=d+' m';$('#oN').textContent=n.toFixed(1);$('#oDw').textContent=dw;$('#oCc').textContent=cc;
+ const r=phy(PH.band,tx,g,n,d,dw,cc);const nf=-174+10*Math.log10(PH.bw*1e6)+7;const snr=r.rssi-nf;const m=mcsFor(snr);
+ $('#kR').innerHTML=r.rssi.toFixed(1)+'<em>dBm</em>';$('#kNf').innerHTML=nf.toFixed(1)+'<em>dBm</em>';$('#kS').innerHTML=snr.toFixed(1)+'<em>dB</em>';
+ $('#kM').innerHTML=m<0?'none':m+'<em>'+MCS[m][2]+'</em>';$('#kRate').innerHTML=m<0?'0':(MCS[m][1]*WMULT[PH.bw]).toFixed(0)+'<em>Mbps</em>';
+ let v;if(r.rssi>=-60&&snr>=30)v='<span class="pill p-ex">Excellent</span>';else if(r.rssi>=-67&&snr>=25)v='<span class="pill p-gd">Voice-grade</span>';else if(r.rssi>=-75&&snr>=15)v='<span class="pill p-fr">Data only</span>';else v='<span class="pill p-pr">Unreliable</span>';
+ $('#kV').innerHTML=v;
+ drawWaterfall([['Tx power',tx],['Antenna',g],['FSPL 1 m',-r.f1],['Distance',-r.dlos],['Walls',-r.wl]],r.rssi);
+ drawDist(tx,g,n,dw,cc,d);
+}
+function drawWaterfall(items,final){
+ const svg=$('#wf'),W=520,H=250,top=26,bot=212,lo=-100,hi=40,y=v=>top+(hi-v)/(hi-lo)*(bot-top);
+ const bw=58,gap=(W-40-bw*6)/5;let run=0,h='';
+ for(let v=-100;v<=40;v+=20)h+=`<line x1="34" x2="${W}" y1="${y(v)}" y2="${y(v)}" stroke="rgba(154,168,255,${v===0?.4:.1})"/><text x="28" y="${y(v)+4}" text-anchor="end" font-size="10.5" fill="#6479a6" font-family="IBM Plex Mono">${v}</text>`;
+ items.forEach(([lab,val],i)=>{const x=40+i*(bw+gap);const a=run,b=run+val;run=b;const y1=y(Math.max(a,b)),y2=y(Math.min(a,b));const pos=val>=0;
+  h+=`<rect x="${x}" y="${y1}" width="${bw}" height="${Math.max(2,y2-y1)}" rx="6" fill="${pos?'url(#gp)':'url(#gn)'}"/>`;
+  h+=`<text x="${x+bw/2}" y="${y1-6}" text-anchor="middle" font-size="12" fill="${pos?'#4fd8ff':'#ffb38a'}" font-family="IBM Plex Mono">${pos?'+':''}${val.toFixed(1)}</text>`;
+  h+=`<text x="${x+bw/2}" y="${bot+18}" text-anchor="middle" font-size="11.5" fill="#9bb0d6">${lab}</text>`;
+  if(i<items.length)h+=`<line x1="${x+bw}" x2="${x+bw+gap}" y1="${y(b)}" y2="${y(b)}" stroke="#6479a6" stroke-dasharray="3 3"/>`});
+ const x=40+5*(bw+gap);h+=`<rect x="${x}" y="${y(Math.max(0,final))}" width="${bw}" height="${Math.abs(y(final)-y(0))}" rx="6" fill="url(#gf)"/><text x="${x+bw/2}" y="${y(final)+16}" text-anchor="middle" font-size="12.5" font-weight="600" fill="#eaf2ff" font-family="IBM Plex Mono">${final.toFixed(1)}</text><text x="${x+bw/2}" y="${bot+18}" text-anchor="middle" font-size="11.5" fill="#eaf2ff" font-weight="600">RSSI</text>`;
+ h+=`<line x1="34" x2="${W}" y1="${y(-67)}" y2="${y(-67)}" stroke="#7ef0cf" stroke-dasharray="5 4" opacity=".7"/><text x="${W-2}" y="${y(-67)-5}" text-anchor="end" font-size="10.5" fill="#7ef0cf">−67 target</text>`;
+ svg.innerHTML=`<defs><linearGradient id="gp" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#4fd8ff"/><stop offset="1" stop-color="#2f7bff"/></linearGradient><linearGradient id="gn" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#ffb38a"/><stop offset="1" stop-color="#c4486a"/></linearGradient><linearGradient id="gf" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#9aa8ff"/><stop offset="1" stop-color="#2f7bff"/></linearGradient></defs>`+h;
+}
+function drawDist(tx,g,n,dw,cc,d){
+ const c=distCtx,W=480,H=250,L=40,Rr=12,T=12,B=28,x=v=>L+(v-1)/59*(W-L-Rr),y=v=>T+(-25-v)/75*(H-T-B);c.clearRect(0,0,W,H);
+ c.font='10.5px IBM Plex Mono';c.textAlign='right';
+ for(let v=-100;v<=-25;v+=15){c.strokeStyle='rgba(154,168,255,.1)';c.beginPath();c.moveTo(L,y(v));c.lineTo(W-Rr,y(v));c.stroke();c.fillStyle='#6479a6';c.fillText(v,L-6,y(v)+4)}
+ c.textAlign='center';for(let v=10;v<=60;v+=10){c.fillStyle='#6479a6';c.fillText(v+' m',x(v),H-8)}
+ c.setLineDash([5,4]);c.strokeStyle='rgba(126,240,207,.7)';c.beginPath();c.moveTo(L,y(-67));c.lineTo(W-Rr,y(-67));c.stroke();c.strokeStyle='rgba(255,138,107,.6)';c.beginPath();c.moveTo(L,y(-80));c.lineTo(W-Rr,y(-80));c.stroke();c.setLineDash([]);
+ c.textAlign='left';c.fillStyle='#7ef0cf';c.fillText('−67',W-Rr-26,y(-67)-4);c.fillStyle='#ff8a6b';c.fillText('−80',W-Rr-26,y(-80)-4);
+ const cols={'2.4':'#ffb38a','5':'#4fd8ff','6':'#9aa8ff'};
+ for(const b of ['2.4','5','6']){c.strokeStyle=cols[b];c.lineWidth=b===PH.band?3:1.5;c.globalAlpha=b===PH.band?1:.55;c.beginPath();for(let v=1;v<=60;v+=.5){const r=phy(b,tx,g,n,v,dw,cc).rssi;v===1?c.moveTo(x(v),y(clamp(r,-100,-25))):c.lineTo(x(v),y(clamp(r,-100,-25)))}c.stroke()}
+ c.globalAlpha=1;c.lineWidth=1;const r=phy(PH.band,tx,g,n,d,dw,cc).rssi;const px=x(d),py=y(clamp(r,-100,-25));
+ const gr=c.createRadialGradient(px,py,0,px,py,16);gr.addColorStop(0,'rgba(255,255,255,.6)');gr.addColorStop(1,'rgba(255,255,255,0)');c.fillStyle=gr;c.beginPath();c.arc(px,py,16,0,7);c.fill();
+ c.fillStyle='#fff';c.beginPath();c.arc(px,py,5,0,7);c.fill();c.strokeStyle='rgba(255,255,255,.25)';c.beginPath();c.moveTo(px,py);c.lineTo(px,H-B);c.stroke();
+}
+segOn($('#pBand'),v=>{PH.band=v;if(v==='2.4'&&PH.bw>40){PH.bw=40;[...$('#pBw').children].forEach(b=>b.classList.toggle('on',b.dataset.v==='40'))}[...$('#pBw').children].forEach(b=>b.disabled=v==='2.4'&&+b.dataset.v>40);updPhy()});
+segOn($('#pBw'),v=>{PH.bw=+v;updPhy()});
+['#pTx','#pG','#pD','#pN','#pDw','#pCc'].forEach(s=>$(s).addEventListener('input',updPhy));
+
+/* ================= SPECTRUM ================= */
+const SP={ch:[1,6,11]};const AP_COL=['#4fd8ff','#9aa8ff','#ffb38a','#7ef0cf','#f2a6ff','#ffd57a','#6aa8ff','#ff9a9a'];
+const specCtx=fitCanvas($('#spec'),520,240);
+function ovl24(a,b){return Math.max(0,1-5*Math.abs(a-b)/22)}
+function drawSpec(){
+ const c=specCtx,W=520,H=240,L=14,Rr=14,T=16,B=34,f0=2397,f1=2487,x=f=>L+(f-f0)/(f1-f0)*(W-L-Rr),base=H-B;c.clearRect(0,0,W,H);
+ c.font='11px IBM Plex Mono';c.textAlign='center';
+ for(let ch=1;ch<=13;ch++){const fx=x(2407+5*ch);c.strokeStyle='rgba(154,168,255,.12)';c.beginPath();c.moveTo(fx,T);c.lineTo(fx,base);c.stroke();c.fillStyle=[1,6,11].includes(ch)?'#eaf2ff':'#6479a6';c.fillText(ch,fx,base+16)}
+ c.fillStyle='#6479a6';c.fillText('2.4 GHz channel',W/2,H-3);
+ c.strokeStyle='rgba(154,168,255,.35)';c.beginPath();c.moveTo(L,base);c.lineTo(W-Rr,base);c.stroke();
+ const mask=df=>{df=Math.abs(df);if(df<=9)return 1;if(df<=11)return 1-(df-9)/2*.72;if(df<=22)return .28*(1-(df-11)/11);return 0};
+ c.globalCompositeOperation='lighter';
+ SP.ch.forEach((ch,i)=>{const fc=2407+5*ch,col=hex2rgb(AP_COL[i]);c.beginPath();c.moveTo(x(fc-22),base);for(let f=fc-22;f<=fc+22;f+=.5){const m=mask(f-fc);c.lineTo(x(f),base-m*(base-T-24))}c.lineTo(x(fc+22),base);c.closePath();
+  const g=c.createLinearGradient(0,T,0,base);g.addColorStop(0,`rgba(${col},.5)`);g.addColorStop(1,`rgba(${col},.06)`);c.fillStyle=g;c.fill();c.strokeStyle=AP_COL[i];c.lineWidth=2;c.stroke();c.lineWidth=1});
+ c.globalCompositeOperation='source-over';
+ SP.ch.forEach((ch,i)=>{const fc=2407+5*ch;c.fillStyle=AP_COL[i];c.font='600 12px IBM Plex Sans';c.fillText('AP'+(i+1),x(fc),T+12+i*0)});
+ let out='';for(let i=0;i<3;i++)for(let j=i+1;j<3;j++){const a=SP.ch[i],b=SP.ch[j],o=ovl24(a,b);let t,p;if(a===b){t='same channel: they take turns (co-channel)';p='p-fr'}else if(o>0){t=Math.round(o*100)+'% overlap: frames collide (adjacent-channel)';p='p-pr'}else{t='clean separation';p='p-ex'}
+  out+=`<div class="row" style="gap:8px"><span style="min-width:84px;color:var(--muted)">AP${i+1} and AP${j+1}</span><span class="pill ${p}">${t}</span></div>`}
+ $('#specOut').innerHTML=out;
+}
+(function(){let h='';for(let i=0;i<3;i++){h+=`<label class="row" style="gap:6px;font-size:13.5px;color:var(--muted)"><span class="dot" style="width:10px;height:10px;border-radius:50%;background:${AP_COL[i]};display:inline-block"></span>AP${i+1}<select data-i="${i}">${BANDS['2.4'].all.map(c=>`<option ${c===SP.ch[i]?'selected':''}>${c}</option>`).join('')}</select></label>`}
+ $('#specSel').innerHTML=h;$$('#specSel select').forEach(s=>s.addEventListener('change',()=>{SP.ch[+s.dataset.i]=+s.value;drawSpec()}));
+ const set=a=>{SP.ch=a.slice();$$('#specSel select').forEach((s,i)=>s.value=a[i]);drawSpec()};
+ $('#pr1').onclick=()=>set([1,6,11]);$('#pr2').onclick=()=>set([1,3,6]);$('#pr3').onclick=()=>set([6,6,6]);})();
+function drawWidth(band){
+ const D=band==='5'?[[20,25,143],[40,12,287],[80,6,600],[160,2,1201]]:[[20,59,143],[40,29,287],[80,14,600],[160,7,1201],[320,3,2882]];
+ const W=560,H=300,L=44,Rr=50,T=20,B=40,n=D.length,bw=(W-L-Rr)/n,maxC=band==='5'?30:60,yc=v=>H-B-v/maxC*(H-T-B),yr=v=>H-B-(Math.log10(v)-2)/(Math.log10(4000)-2)*(H-T-B);
+ let h='<defs><linearGradient id="wb" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#4fd8ff"/><stop offset="1" stop-color="#2f7bff" stop-opacity=".5"/></linearGradient></defs>';
+ for(let i=0;i<=4;i++){const v=maxC*i/4,yy=yc(v);h+=`<line x1="${L}" x2="${W-Rr}" y1="${yy}" y2="${yy}" stroke="rgba(154,168,255,.1)"/><text x="${L-8}" y="${yy+4}" text-anchor="end" font-size="11" fill="#6479a6" font-family="IBM Plex Mono">${v}</text>`}
+ [100,300,1000,3000].forEach(v=>h+=`<text x="${W-Rr+8}" y="${yr(v)+4}" font-size="11" fill="#c98e70" font-family="IBM Plex Mono">${v}</text>`);
+ let pts=[];D.forEach(([w,c,r],i)=>{const cx=L+bw*i+bw/2,bwid=bw*.5;h+=`<rect x="${cx-bwid/2}" y="${yc(c)}" width="${bwid}" height="${H-B-yc(c)}" rx="7" fill="url(#wb)"/><text x="${cx}" y="${yc(c)-8}" text-anchor="middle" font-size="14" font-weight="600" fill="#eaf2ff">${c}</text><text x="${cx}" y="${H-B+18}" text-anchor="middle" font-size="12.5" fill="#9bb0d6">${w} MHz</text><text x="${cx}" y="${H-B+33}" text-anchor="middle" font-size="10.5" fill="#6479a6" font-family="IBM Plex Mono">${(-94+10*Math.log10(w/20)).toFixed(0)} dBm floor</text>`;pts.push([cx,yr(r),r])});
+ h+=`<polyline points="${pts.map(p=>p[0]+','+p[1]).join(' ')}" fill="none" stroke="#ffb38a" stroke-width="2.5"/>`;
+ pts.forEach(p=>h+=`<circle cx="${p[0]}" cy="${p[1]}" r="5" fill="#04102a" stroke="#ffb38a" stroke-width="2.5"/><text x="${p[0]+9}" y="${p[1]-8}" font-size="11.5" fill="#ffb38a" font-family="IBM Plex Mono">${p[2]}</text>`);
+ $('#wch').innerHTML=h;
+}
+segOn($('#wBand'),drawWidth);
+
+/* ================= COVERAGE LAB ================= */
+const FW=40,FH=25,GX=200,GY=125,CX=40,CY=25,PX=24,ANT=3,PLE=3.0,NOISE=-94;
+const WALLS=[[0,0,40,0,'brick'],[40,0,40,25,'brick'],[40,25,0,25,'brick'],[0,25,0,0,'brick'],
+ [0,10,4,10,'drywall'],[5.5,10,14,10,'drywall'],[15.5,10,20,10,'drywall'],[20,10,24,10,'concrete'],[25.5,10,30,10,'concrete'],[30,10,34,10,'drywall'],[35.5,10,40,10,'drywall'],
+ [10,0,10,10,'drywall'],[20,0,20,10,'concrete'],[30,0,30,10,'concrete'],
+ [24,14,27,14,'glass'],[28.5,14,32,14,'glass'],[32,14,35,14,'brick'],[36.5,14,40,14,'brick'],[24,14,24,25,'glass'],[32,14,32,25,'brick'],
+ [12,18,15,18,'concrete'],[15,18,15,21,'concrete'],[15,21,12,21,'concrete'],[12,21,12,18,'concrete']];
+const ROOMS=[[5,5,'Office A'],[15,5,'Office B'],[25,5,'Server room'],[35,5,'Lounge'],[19.5,12.2,'Corridor'],[6,22.5,'Open office'],[28,22.5,'Conference'],[36,22.5,'Lab'],[13.5,19.7,'Stairs']];
+const NW=WALLS.length,WX1=new Float32Array(NW),WY1=new Float32Array(NW),WX2=new Float32Array(NW),WY2=new Float32Array(NW),WMNX=new Float32Array(NW),WMXX=new Float32Array(NW),WMNY=new Float32Array(NW),WMXY=new Float32Array(NW);
+WALLS.forEach((w,i)=>{WX1[i]=w[0];WY1[i]=w[1];WX2[i]=w[2];WY2[i]=w[3];WMNX[i]=Math.min(w[0],w[2]);WMXX[i]=Math.max(w[0],w[2]);WMNY[i]=Math.min(w[1],w[3]);WMXY[i]=Math.max(w[1],w[3])});
+const shadow=(x,y)=>1.4*Math.sin(x*.9+y*.43)+1.1*Math.sin(x*.37-y*1.07+1.3)+.8*Math.sin((x+y)*1.73+.5);
+const SH=new Float32Array(GX*GY);for(let j=0;j<GY;j++)for(let i=0;i<GX;i++)SH[j*GX+i]=shadow((i+.5)*FW/GX,(j+.5)*FH/GY);
+function wallLoss(band){const B=BANDS[band];return Float32Array.from(WALLS,w=>B.wall[w[4]])}
+function lossPath(ax,ay,x,y,WL){let L=0;const mnx=Math.min(ax,x),mxx=Math.max(ax,x),mny=Math.min(ay,y),mxy=Math.max(ay,y);
+ for(let w=0;w<NW;w++){if(WMXX[w]<mnx||WMNX[w]>mxx||WMXY[w]<mny||WMNY[w]>mxy)continue;
+  const cx=WX1[w],cy=WY1[w],dx=WX2[w],dy=WY2[w];const d1=(dx-cx)*(ay-cy)-(dy-cy)*(ax-cx),d2=(dx-cx)*(y-cy)-(dy-cy)*(x-cx);if(d1*d2>0)continue;
+  const d3=(x-ax)*(cy-ay)-(y-ay)*(cx-ax),d4=(x-ax)*(dy-ay)-(y-ay)*(dx-ax);if(d3*d4<=0)L+=WL[w]}return L}
+function rssiAt(ap,band,x,y){const WL=wallLoss(band);const d=Math.max(Math.hypot(x-ap.x,y-ap.y),.5);return ap.p+ANT-fspl1(BANDS[band].f)-10*PLE*Math.log10(d)-lossPath(ap.x,ap.y,x,y,WL)+shadow(x,y)}
+function apGrid(ap,band,gx,gy){const g=new Float32Array(gx*gy),WL=wallLoss(band),f1=fspl1(BANDS[band].f),sx=FW/gx,sy=FH/gy,fine=gx===GX,k=ap.p+ANT-f1;
+ for(let j=0;j<gy;j++){const y=(j+.5)*sy;for(let i=0;i<gx;i++){const x=(i+.5)*sx,dx=x-ap.x,dy=y-ap.y,d=Math.max(Math.sqrt(dx*dx+dy*dy),.5);
+  g[j*gx+i]=k-10*PLE*Math.log10(d)-lossPath(ap.x,ap.y,x,y,WL)+(fine?SH[j*gx+i]:shadow(x,y))}}return g}
+function overlap(band,a,b){return band==='2.4'?ovl24(a,b):(a===b?1:0)}
+function combine(grids,aps,band,gx,gy){const n=gx*gy,best=new Float32Array(n),sinr=new Float32Array(n),serve=new Uint8Array(n),k=aps.length,N=Math.pow(10,NOISE/10);
+ if(!k){best.fill(-120);sinr.fill(-30);return{best,sinr,serve,gx,gy}}
+ const ov=aps.map(a=>aps.map(b=>overlap(band,a.ch,b.ch))),lin=new Float64Array(k);
+ for(let c=0;c<n;c++){let bi=0,bv=-999;for(let a=0;a<k;a++){const v=grids[a][c];lin[a]=Math.pow(10,v/10);if(v>bv){bv=v;bi=a}}
+  let I=0;const o=ov[bi];for(let a=0;a<k;a++)if(a!==bi)I+=o[a]*lin[a];best[c]=bv;serve[c]=bi;sinr[c]=10*Math.log10(lin[bi]/(N+I))}
+ return{best,sinr,serve,gx,gy}}
+function quick(C){const n=C.gx*C.gy;let c67=0,dead=0,sg=0;for(let c=0;c<n;c++){const b=C.best[c];if(b>=-67)c67++;if(b<-80)dead++;if(C.sinr[c]>=25)sg++}return{c67:c67/n,dead:dead/n,sg:sg/n}}
+function cciCount(aps,band){let k=0;for(let i=0;i<aps.length;i++)for(let j=i+1;j<aps.length;j++)if(overlap(band,aps[i].ch,aps[j].ch)>0&&rssiAt(aps[j],band,aps[i].x,aps[i].y)>-82)k++;return k}
+function fullStats(C,aps,band){const q=quick(C),n=C.gx*C.gy,s=Float32Array.from(C.sinr).sort();let rate=0;for(let c=0;c<n;c++){const m=mcsFor(C.sinr[c]);rate+=m<0?0:MCS[m][1]}return{...q,med:s[n>>1],rate:rate/n,cci:cciCount(aps,band)}}
+
+const LAB={band:'2.4',view:'rssi',aps:[],sel:0,C:null,busy:false};
+const DEFAULT_APS=[{x:3.5,y:3.5,ch:1,p:12},{x:22,y:12,ch:1,p:12},{x:29,y:21,ch:6,p:12},{x:9,y:22,ch:6,p:12}];
+const labCv=$('#labcv'),labCtx=fitCanvas(labCv,960,600);
+const offs={};function offFor(gx,gy){const k=gx+'x'+gy;if(!offs[k]){const c=document.createElement('canvas');c.width=gx;c.height=gy;offs[k]=c}return offs[k]}
+function resetLab(){LAB.aps=DEFAULT_APS.map((a,i)=>({...a,name:'AP'+(i+1),id:i}));if(LAB.band!=='2.4'){autoChannel()}LAB.sel=0;recomputeAll()}
+function recomputeAll(){LAB.aps.forEach(a=>a.g=apGrid(a,LAB.band,GX,GY));refresh()}
+function refresh(){LAB.C=combine(LAB.aps.map(a=>a.g),LAB.aps,LAB.band,GX,GY);drawLab(LAB.C);labStatsUI(LAB.C);selUI();terrainQueue()}
+function colorFor(C,c,view){if(view==='rssi')return rssiRamp(C.best[c]);if(view==='sinr')return sinrRamp(C.sinr[c]);const b=hex2rgb(AP_COL[C.serve[c]%8]),t=clamp((C.best[c]+92)/50,.12,1);return[b[0]*t,b[1]*t,b[2]*t]}
+function drawLab(C){
+ const {gx,gy}=C,off=offFor(gx,gy),oc=off.getContext('2d'),img=oc.createImageData(gx,gy),D=img.data,v=LAB.view,th=v==='sinr'?25:-67,arr=v==='sinr'?C.sinr:C.best;
+ for(let j=0;j<gy;j++)for(let i=0;i<gx;i++){const c=j*gx+i;let col=colorFor(C,c,v);
+  if(v!=='serve'){const a=arr[c]>=th,r=i<gx-1&&(arr[c+1]>=th)!==a,d=j<gy-1&&(arr[c+gx]>=th)!==a;if(r||d)col=[236,246,255]}
+  else{const r=i<gx-1&&C.serve[c+1]!==C.serve[c],d=j<gy-1&&C.serve[c+gx]!==C.serve[c];if(r||d)col=[4,16,42]}
+  const o=c*4;D[o]=col[0];D[o+1]=col[1];D[o+2]=col[2];D[o+3]=255}
+ oc.putImageData(img,0,0);const x=labCtx;x.imageSmoothingEnabled=true;x.imageSmoothingQuality='high';x.clearRect(0,0,960,600);x.drawImage(off,0,0,960,600);
+ x.fillStyle='rgba(4,16,42,.18)';x.fillRect(0,0,960,600);
+ x.textAlign='center';x.font='600 12px IBM Plex Sans';ROOMS.forEach(([rx,ry,t])=>{x.fillStyle='rgba(234,242,255,.55)';x.fillText(t,rx*PX,ry*PX)});
+ const st={concrete:['#c9d6f5',6,[]],brick:['#ffb38a',5,[]],drywall:['rgba(234,242,255,.8)',3,[]],glass:['#7ef0cf',3,[6,4]]};
+ x.lineCap='round';WALLS.forEach(w=>{const s=st[w[4]];x.strokeStyle='rgba(4,16,42,.7)';x.lineWidth=s[1]+3;x.setLineDash([]);x.beginPath();x.moveTo(w[0]*PX,w[1]*PX);x.lineTo(w[2]*PX,w[3]*PX);x.stroke();x.strokeStyle=s[0];x.lineWidth=s[1];x.setLineDash(s[2]);x.stroke()});x.setLineDash([]);
+ LAB.aps.forEach((a,i)=>{const X=a.x*PX,Y=a.y*PX,col=AP_COL[i%8];const g=x.createRadialGradient(X,Y,0,X,Y,40);g.addColorStop(0,col+'aa');g.addColorStop(1,col+'00');x.fillStyle=g;x.beginPath();x.arc(X,Y,40,0,7);x.fill();
+  if(i===LAB.sel){x.strokeStyle='#fff';x.lineWidth=2;x.setLineDash([4,4]);x.beginPath();x.arc(X,Y,19,0,7);x.stroke();x.setLineDash([])}
+  x.fillStyle='#04102a';x.strokeStyle=col;x.lineWidth=3;x.beginPath();x.arc(X,Y,11,0,7);x.fill();x.stroke();x.fillStyle=col;x.beginPath();x.arc(X,Y,4.5,0,7);x.fill();
+  const lbl=`${a.name}  ch ${a.ch}  ${a.p} dBm`;x.font='600 12px IBM Plex Sans';const tw=x.measureText(lbl).width+16,ly=Y-26>14?Y-38:Y+22;x.fillStyle='rgba(4,16,42,.85)';x.beginPath();x.roundRect?x.roundRect(X-tw/2,ly,tw,22,11):x.rect(X-tw/2,ly,tw,22);x.fill();x.strokeStyle=col;x.lineWidth=1;x.stroke();x.fillStyle='#eaf2ff';x.fillText(lbl,X,ly+15)});
+}
+function labStatsUI(C){const s=fullStats(C,LAB.aps,LAB.band);LAB.last=s;$('#sCov').innerHTML=(s.c67*100).toFixed(0)+'<em>%</em>';$('#sDead').innerHTML=(s.dead*100).toFixed(1)+'<em>%</em>';$('#sSinr').innerHTML=s.med.toFixed(1)+'<em>dB</em>';$('#sRate').innerHTML=s.rate.toFixed(0)+'<em>Mbps</em>';$('#sCci').innerHTML=s.cci+'<em>'+(s.cci?'pairs share airtime':'clean plan')+'</em>'}
+function setScale(){const v=LAB.view;const el=$('#labScale'),l=$('#labScaleL');if(v==='serve'){el.style.background='linear-gradient(90deg,'+LAB.aps.map((a,i)=>AP_COL[i%8]+' '+(i/LAB.aps.length*100)+'%,'+AP_COL[i%8]+' '+((i+1)/LAB.aps.length*100)+'%').join(',')+')';l.innerHTML=LAB.aps.map(a=>'<span>'+a.name+'</span>').join('');return}
+ const S=v==='sinr'?SINR_STOPS:RSSI_STOPS;el.style.background=gradCSS(S);l.innerHTML=S.map(s=>'<span>'+s[0]+'</span>').join('')+'<span>'+(v==='sinr'?'dB SINR':'dBm')+'</span>'}
+function selUI(){const a=LAB.aps[LAB.sel],el=$('#selAp');if(!a){el.innerHTML='<span style="color:var(--muted);font-size:14px">No access points. Add one to start.</span>';return}
+ const B=BANDS[LAB.band],opts=(LAB.band==='2.4'?B.all:B.all).map(c=>`<option ${c===a.ch?'selected':''}>${c}</option>`).join('');
+ el.innerHTML=`<div class="row" style="justify-content:space-between;margin-bottom:10px"><span class="row" style="gap:8px;font:600 16px var(--disp)"><span class="dot" style="background:${AP_COL[LAB.sel%8]}"></span>${a.name} selected</span><label class="row" style="gap:6px;font-size:13.5px;color:var(--muted)">Channel <select id="selCh">${opts}</select></label></div>
+ <div class="ctl" style="margin:0"><label>Transmit power <output>${a.p} dBm</output></label><input type="range" id="selP" min="4" max="${B.pmax}" value="${a.p}"></div>`;
+ $('#selCh').onchange=e=>{a.ch=+e.target.value;refresh()};$('#selP').oninput=e=>{a.p=+e.target.value;e.target.previousElementSibling.querySelector('output').textContent=a.p+' dBm';schedule(()=>{a.g=apGrid(a,LAB.band,GX,GY);LAB.C=combine(LAB.aps.map(a=>a.g),LAB.aps,LAB.band,GX,GY);drawLab(LAB.C);labStatsUI(LAB.C);terrainQueue()})}}
+let rafPending=null;function schedule(fn){if(rafPending){rafPending=fn;return}rafPending=fn;requestAnimationFrame(()=>{const f=rafPending;rafPending=null;f()})}
+function autoChannel(){const band=LAB.band,opts=BANDS[band].ch,aps=LAB.aps,done=[];
+ const order=aps.map((a,i)=>i).sort((i,j)=>{const s=k=>aps.reduce((t,b,m)=>m===k?t:t+Math.pow(10,rssiAt(b,band,aps[k].x,aps[k].y)/10),0);return s(j)-s(i)});
+ for(const i of order){let bc=Infinity,best=opts[0];for(const ch of opts){let c=0;for(const j of done)c+=overlap(band,ch,aps[j].ch)*Math.pow(10,rssiAt(aps[j],band,aps[i].x,aps[i].y)/10);if(c<bc*0.999){bc=c;best=ch}}aps[i].ch=best;done.push(i)}}
+function mPos(e){const r=labCv.getBoundingClientRect();return[(e.clientX-r.left)/r.width*FW,(e.clientY-r.top)/r.height*FH,r]}
+function hit(mx,my){let k=-1,bd=1.4;LAB.aps.forEach((a,i)=>{const d=Math.hypot(a.x-mx,a.y-my);if(d<bd){bd=d;k=i}});return k}
+let drag=-1;
+labCv.addEventListener('pointerdown',e=>{if(LAB.busy)return;const[mx,my]=mPos(e);const k=hit(mx,my);if(k>=0){drag=k;LAB.sel=k;labCv.setPointerCapture(e.pointerId);drawLab(LAB.C);selUI()}});
+labCv.addEventListener('pointermove',e=>{const[mx,my,r]=mPos(e);const tip=$('#labTip');
+ if(drag>=0){const a=LAB.aps[drag];a.x=clamp(mx,.5,FW-.5);a.y=clamp(my,.5,FH-.5);tip.style.opacity=0;schedule(()=>{a.g=apGrid(a,LAB.band,GX,GY);LAB.C=combine(LAB.aps.map(a=>a.g),LAB.aps,LAB.band,GX,GY);drawLab(LAB.C);labStatsUI(LAB.C);terrainQueue()});return}
+ labCv.classList.toggle('grab',hit(mx,my)>=0);if(!LAB.C||mx<0||my<0||mx>FW||my>FH){tip.style.opacity=0;return}
+ const i=clamp(Math.floor(mx/FW*LAB.C.gx),0,LAB.C.gx-1),j=clamp(Math.floor(my/FH*LAB.C.gy),0,LAB.C.gy-1),c=j*LAB.C.gx+i,m=mcsFor(LAB.C.sinr[c]);
+ tip.innerHTML=`Signal <b>${LAB.C.best[c].toFixed(1)} dBm</b><br>SINR <b>${LAB.C.sinr[c].toFixed(1)} dB</b><br>Served by <b>${LAB.aps[LAB.C.serve[c]]?.name||'none'}</b><br>Rate <b>${m<0?0:MCS[m][1]} Mbps</b>`;
+ let tx=e.clientX-r.left+16,ty=e.clientY-r.top+16;if(tx>r.width-160)tx-=180;if(ty>r.height-90)ty-=110;tip.style.left=tx+'px';tip.style.top=ty+'px';tip.style.opacity=1});
+labCv.addEventListener('pointerup',()=>{if(drag>=0){drag=-1;refresh()}});
+labCv.addEventListener('pointerleave',()=>$('#labTip').style.opacity=0);
+segOn($('#lBand'),v=>{LAB.band=v;const pm=BANDS[v].pmax;LAB.aps.forEach(a=>a.p=Math.min(a.p,pm));autoChannel();recomputeAll();hideToast()});
+segOn($('#lView'),v=>{LAB.view=v;setScale();drawLab(LAB.C)});
+$('#lAdd').onclick=()=>{if(LAB.aps.length>=8)return;const n=LAB.aps.length;let id=1;while(LAB.aps.some(a=>a.name==='AP'+id))id++;
+ const spots=[[35,5],[15,5],[20,20],[36,20],[5,5],[28,20],[10,16],[25,5]];const s=spots.find(([x,y])=>LAB.aps.every(a=>Math.hypot(a.x-x,a.y-y)>5))||[20,12];
+ LAB.aps.push({x:s[0],y:s[1],ch:BANDS[LAB.band].ch[0],p:17,name:'AP'+id});LAB.sel=n;autoChannel();recomputeAll();setScale()};
+$('#lRem').onclick=()=>{if(!LAB.aps.length)return;LAB.aps.splice(LAB.sel,1);LAB.sel=Math.max(0,LAB.sel-1);recomputeAll();setScale()};
+$('#lCh').onclick=()=>{autoChannel();refresh()};
+$('#lReset').onclick=()=>{resetLab();setScale();hideToast()};
+function hideToast(){$('#lToast').classList.remove('show')}
+const gauss=()=>{let u=0,v=0;while(!u)u=Math.random();while(!v)v=Math.random();return Math.sqrt(-2*Math.log(u))*Math.cos(2*Math.PI*v)};
+$('#lOpt').onclick=()=>{if(LAB.busy||!LAB.aps.length)return;LAB.busy=true;['#lOpt','#lAdd','#lRem','#lCh','#lReset'].forEach(s=>$(s).disabled=true);
+ const before=LAB.last,band=LAB.band,aps=LAB.aps,pmax=BANDS[band].pmax;autoChannel();
+ let grids=aps.map(a=>apGrid(a,band,CX,CY));const score=()=>{const q=quick(combine(grids,aps,band,CX,CY));return q.c67+.6*q.sg-.8*q.dead};
+ let cur=score(),best=cur,bestS=aps.map(a=>({x:a.x,y:a.y,p:a.p}));const IT=900;let it=0;const toast=$('#lToast');toast.classList.add('show');
+ function step(){for(let k=0;k<30&&it<IT;k++,it++){const pr=it/IT,T=.03*Math.pow(.015,pr),i=Math.floor(Math.random()*aps.length),a=aps[i],old={x:a.x,y:a.y,p:a.p};
+   if(Math.random()<.25)a.p=clamp(a.p+(Math.random()<.5?-2:2),6,pmax);else{const s=lerp(8,.6,pr);a.x=clamp(a.x+gauss()*s,1,FW-1);a.y=clamp(a.y+gauss()*s,1,FH-1)}
+   const og=grids[i];grids[i]=apGrid(a,band,CX,CY);const ns=score();
+   if(ns>=cur||Math.random()<Math.exp((ns-cur)/T)){cur=ns;if(ns>best){best=ns;bestS=aps.map(a=>({x:a.x,y:a.y,p:a.p}))}}else{Object.assign(a,old);grids[i]=og}
+   if(it%300===299){autoChannel();grids=aps.map(a=>apGrid(a,band,CX,CY));cur=score()}}
+  drawLab(combine(grids,aps,band,CX,CY));toast.innerHTML=`Annealing: step <b>${it}</b> of ${IT}, best score <b>${best.toFixed(3)}</b>`;
+  if(it<IT)requestAnimationFrame(step);else finish()}
+ function finish(){aps.forEach((a,i)=>Object.assign(a,bestS[i]));autoChannel();recomputeAll();const s=LAB.last;
+  toast.innerHTML=`Coverage at −67 dBm: <b>${(before.c67*100).toFixed(0)}% to ${(s.c67*100).toFixed(0)}%</b>. Median SINR: <b>${before.med.toFixed(1)} to ${s.med.toFixed(1)} dB</b>. Dead zones: <b>${(before.dead*100).toFixed(1)}% to ${(s.dead*100).toFixed(1)}%</b>.`;
+  LAB.busy=false;['#lOpt','#lAdd','#lRem','#lCh','#lReset'].forEach(s=>$(s).disabled=false)}
+ requestAnimationFrame(step)};
+
+/* ================= 3D TERRAIN ================= */
+const TR={metric:'rssi',plane:true,rot:true,ready:false,queued:false};
+const H=v=>TR.metric==='sinr'?Math.pow(clamp(v/45,0,1),1.2)*8:Math.pow(clamp((v+92)/62,0,1),1.3)*8;
+let terTimer=null;function terrainQueue(){if(!TR.ready)return;clearTimeout(terTimer);terTimer=setTimeout(updateTerrain,120)}
+function initTerrain(){
+ const cv=$('#terrain3d');const R=new THREE.WebGLRenderer({canvas:cv,antialias:true,alpha:true});R.setPixelRatio(DPR);
+ const S=new THREE.Scene();S.fog=new THREE.Fog(0x04102a,70,150);const cam=new THREE.PerspectiveCamera(38,1,.1,400);
+ S.add(new THREE.AmbientLight(0x8aa4e0,.6));const d1=new THREE.DirectionalLight(0xffffff,.85);d1.position.set(-20,40,25);S.add(d1);const d2=new THREE.DirectionalLight(0xffb38a,.4);d2.position.set(30,15,-20);S.add(d2);
+ const SX=120,SY=75,geo=new THREE.PlaneGeometry(FW,FH,SX,SY);geo.setAttribute('color',new THREE.BufferAttribute(new Float32Array((SX+1)*(SY+1)*3),3));
+ const mesh=new THREE.Mesh(geo,new THREE.MeshStandardMaterial({vertexColors:true,roughness:.5,metalness:.12,side:THREE.DoubleSide}));mesh.rotation.x=-Math.PI/2;S.add(mesh);
+ const wire=new THREE.Mesh(geo,new THREE.MeshBasicMaterial({color:0xbfd6ff,wireframe:true,transparent:true,opacity:.05}));wire.rotation.x=-Math.PI/2;S.add(wire);
+ const slab=new THREE.Mesh(new THREE.BoxGeometry(FW+1,.5,FH+1),new THREE.MeshStandardMaterial({color:0x0b1f48,metalness:.5,roughness:.4}));slab.position.y=-.3;S.add(slab);
+ const grid=new THREE.GridHelper(140,70,0x1d3a7a,0x10224a);grid.position.y=-.56;S.add(grid);
+ const wcol={concrete:0xc9d6f5,brick:0xffb38a,drywall:0xeaf2ff,glass:0x7ef0cf},wh={concrete:1.6,brick:1.4,drywall:1.1,glass:1.1};
+ WALLS.forEach(w=>{const dx=w[2]-w[0],dy=w[3]-w[1],L=Math.hypot(dx,dy),h=wh[w[4]];const m=new THREE.Mesh(new THREE.BoxGeometry(L,h,.14),new THREE.MeshStandardMaterial({color:wcol[w[4]],transparent:true,opacity:w[4]==='glass'?.35:.55,emissive:wcol[w[4]],emissiveIntensity:.15}));m.position.set((w[0]+w[2])/2-FW/2,h/2,(w[1]+w[3])/2-FH/2);m.rotation.y=-Math.atan2(dy,dx);S.add(m)});
+ const pl=new THREE.Mesh(new THREE.PlaneGeometry(FW,FH),new THREE.MeshBasicMaterial({color:0x7ef0cf,transparent:true,opacity:.1,side:THREE.DoubleSide,depthWrite:false}));pl.rotation.x=-Math.PI/2;S.add(pl);
+ const ple=new THREE.LineSegments(new THREE.EdgesGeometry(new THREE.PlaneGeometry(FW,FH)),new THREE.LineBasicMaterial({color:0x7ef0cf,transparent:true,opacity:.7}));ple.rotation.x=-Math.PI/2;S.add(ple);
+ const apG=new THREE.Group();S.add(apG);
+ let th=.75,ph=.92,rad=50,dr=null;
+ cv.addEventListener('pointerdown',e=>{dr={x:e.clientX,y:e.clientY,th,ph};cv.setPointerCapture(e.pointerId)});
+ cv.addEventListener('pointermove',e=>{if(!dr)return;th=dr.th-(e.clientX-dr.x)*.006;ph=clamp(dr.ph-(e.clientY-dr.y)*.005,.25,1.45)});
+ cv.addEventListener('pointerup',()=>dr=null);
+ cv.addEventListener('wheel',e=>{e.preventDefault();rad=clamp(rad+e.deltaY*.04,20,90)},{passive:false});
+ function size(){const w=cv.clientWidth,h=cv.clientHeight;R.setSize(w,h,false);cam.aspect=w/h;cam.updateProjectionMatrix()}size();addEventListener('resize',size);
+ let vis=false;onVisible(cv,v=>vis=v);const clock=new THREE.Clock();
+ TR.update=()=>{const C=LAB.C;if(!C)return;const pos=geo.attributes.position,col=geo.attributes.color,arr=TR.metric==='sinr'?C.sinr:C.best,ramp=TR.metric==='sinr'?sinrRamp:rssiRamp;
+  for(let r=0;r<=SY;r++)for(let q=0;q<=SX;q++){const idx=r*(SX+1)+q,i=Math.min(GX-1,Math.floor(q/SX*GX)),j=Math.min(GY-1,Math.floor(r/SY*GY)),v=arr[j*GX+i];pos.setZ(idx,H(v));const c=ramp(v);col.setXYZ(idx,c[0]/255,c[1]/255,c[2]/255)}
+  pos.needsUpdate=true;col.needsUpdate=true;geo.computeVertexNormals();const ty=H(TR.metric==='sinr'?25:-67);pl.position.y=ty;ple.position.y=ty;pl.visible=ple.visible=TR.plane;
+  while(apG.children.length)apG.remove(apG.children[0]);
+  LAB.aps.forEach((a,k)=>{const col=new THREE.Color(AP_COL[k%8]),i=clamp(Math.floor(a.x/FW*GX),0,GX-1),j=clamp(Math.floor(a.y/FH*GY),0,GY-1),top=H(arr[j*GX+i])+2.2,x=a.x-FW/2,z=a.y-FH/2;
+   const beam=new THREE.Mesh(new THREE.CylinderGeometry(.06,.06,top,8),new THREE.MeshBasicMaterial({color:col,transparent:true,opacity:.6}));beam.position.set(x,top/2,z);apG.add(beam);
+   const s=new THREE.Mesh(new THREE.SphereGeometry(.42,24,16),new THREE.MeshStandardMaterial({color:col,emissive:col,emissiveIntensity:.8}));s.position.set(x,top,z);apG.add(s);
+   const g=new THREE.Sprite(new THREE.SpriteMaterial({map:GT,color:col,blending:THREE.AdditiveBlending,transparent:true,depthWrite:false}));g.scale.set(3.4,3.4,1);g.position.set(x,top,z);apG.add(g)});
+  const S2=TR.metric==='sinr'?SINR_STOPS:RSSI_STOPS;$('#terScale').style.background=gradCSS(S2);$('#terScaleL').innerHTML=`<span>${S2[0][0]}</span><span>${TR.metric==='sinr'?'SINR, dB':'Signal, dBm'}</span><span>${S2[S2.length-1][0]}</span>`};
+ (function loop(){requestAnimationFrame(loop);if(!vis)return;if(TR.rot&&!dr&&!reduceMotion)th+=.0016;cam.position.set(rad*Math.sin(ph)*Math.sin(th),rad*Math.cos(ph),rad*Math.sin(ph)*Math.cos(th));cam.lookAt(0,2,0);R.render(S,cam)})();
+ TR.ready=true;TR.update();
+}
+function updateTerrain(){TR.update&&TR.update()}
+segOn($('#tMetric'),v=>{TR.metric=v;updateTerrain()});
+$('#tPlane').onclick=e=>{TR.plane=!TR.plane;e.target.textContent=TR.plane?'Hide target plane':'Show target plane';updateTerrain()};
+$('#tRot').onclick=e=>{TR.rot=!TR.rot;e.target.textContent=TR.rot?'Pause rotation':'Resume rotation'};
+
+/* ================= BEAMFORMING ================= */
+const BF={N:8,d:.5,u:1,a1:22,a2:-38};const BW=760,BH=500,FXc=190,FYc=125,LAMc=15,KK=2*Math.PI/LAMc;
+const beamCtx=fitCanvas($('#beamcv'),BW,BH),polCtx=fitCanvas($('#polar'),340,200);
+const bOff=document.createElement('canvas');bOff.width=FXc;bOff.height=FYc;const bOc=bOff.getContext('2d'),bImg=bOc.createImageData(FXc,FYc);
+const DIV=(()=>{const r=makeRamp([[-1,'#ffd2b8'],[-.45,'#c4486a'],[-.12,'#2a1650'],[0,'#071535'],[.12,'#13306e'],[.45,'#2f7bff'],[1,'#d4f8ff']]);const L=new Uint8Array(256*3);for(let i=0;i<256;i++){const c=r(i/127.5-1);L[i*3]=c[0];L[i*3+1]=c[1];L[i*3+2]=c[2]}return L})();
+let KR=null,INV=null,DS=null,BA=[],BPH=[],XS=[],BNORM=1;const ACX=FXc/2,ACY=FYc-5;
+function bfSetup(){const N=BF.N,n=FXc*FYc;XS=[...Array(N)].map((_,i)=>(i-(N-1)/2)*BF.d*LAMc);KR=new Float32Array(N*n);INV=new Float32Array(N*n);DS=new Float32Array(n);
+ for(let j=0;j<FYc;j++)for(let i=0;i<FXc;i++){const c=j*FXc+i;DS[c]=Math.sqrt(Math.hypot(i-ACX,j-ACY)+3);for(let e=0;e<N;e++){const r=Math.hypot(i-(ACX+XS[e]),j-ACY);KR[e*n+c]=KK*r;INV[e*n+c]=1/Math.sqrt(r+1.5)}}
+ const angs=BF.u===1?[BF.a1]:[BF.a1,BF.a2];BA=[];BPH=[];BNORM=0;
+ for(let e=0;e<N;e++){let re=0,im=0;angs.forEach(a=>{const p=-KK*XS[e]*Math.sin(a*Math.PI/180);re+=Math.cos(p);im+=Math.sin(p)});BA.push(Math.hypot(re,im));BPH.push(Math.atan2(im,re));BNORM+=Math.hypot(re,im)}
+ BNORM=Math.max(BNORM,1);drawPolar();bfStats()}
+function AF(w,thetaDeg){const s=Math.sin(thetaDeg*Math.PI/180);let re=0,im=0;for(let e=0;e<BF.N;e++){const p=KK*XS[e]*s;re+=w[e][0]*Math.cos(p)-w[e][1]*Math.sin(p);im+=w[e][0]*Math.sin(p)+w[e][1]*Math.cos(p)}return Math.hypot(re,im)}
+const wFor=a=>XS.map(x=>{const p=-KK*x*Math.sin(a*Math.PI/180);return[Math.cos(p),Math.sin(p)]});
+function drawPolar(){const c=polCtx,W=340,H=200,cx=W/2,cy=H-14,R=160;c.clearRect(0,0,W,H);
+ for(let db=0;db>=-30;db-=10){const r=(db+30)/30*R;c.strokeStyle='rgba(154,168,255,.14)';c.beginPath();c.arc(cx,cy,r,Math.PI,2*Math.PI);c.stroke();if(db>-30){c.fillStyle='#6479a6';c.font='10px IBM Plex Mono';c.fillText(db+' dB',cx+3,cy-r+11)}}
+ for(let a=-90;a<=90;a+=30){const t=(a-90)*Math.PI/180;c.strokeStyle='rgba(154,168,255,.12)';c.beginPath();c.moveTo(cx,cy);c.lineTo(cx+Math.cos(t)*R,cy+Math.sin(t)*R);c.stroke()}
+ const pats=BF.u===1?[[BF.a1,'#4fd8ff']]:[[BF.a1,'#4fd8ff'],[BF.a2,'#ffb38a']];
+ pats.forEach(([ang,col])=>{const w=wFor(ang);c.beginPath();for(let a=-90;a<=90;a+=.5){const v=AF(w,a)/BF.N,db=Math.max(-30,20*Math.log10(Math.max(v,1e-4))),r=(db+30)/30*R,t=(a-90)*Math.PI/180;const X=cx+Math.cos(t)*r,Y=cy+Math.sin(t)*r;a===-90?c.moveTo(X,Y):c.lineTo(X,Y)}
+  c.closePath();const g=c.createRadialGradient(cx,cy,0,cx,cy,R);g.addColorStop(0,col+'10');g.addColorStop(1,col+'55');c.fillStyle=g;c.fill();c.strokeStyle=col;c.lineWidth=2;c.stroke();c.lineWidth=1;
+  const t=(ang-90)*Math.PI/180;c.setLineDash([3,4]);c.strokeStyle=col;c.beginPath();c.moveTo(cx,cy);c.lineTo(cx+Math.cos(t)*(R+6),cy+Math.sin(t)*(R+6));c.stroke();c.setLineDash([])});
+ c.fillStyle='#9bb0d6';c.font='10.5px IBM Plex Sans';c.textAlign='center';c.fillText('broadside 0°',cx,12);c.textAlign='left';c.fillText('−90°',2,cy);c.textAlign='right';c.fillText('+90°',W-2,cy);c.textAlign='left'}
+function bfStats(){const N=BF.N,d=BF.d,t1=BF.a1*Math.PI/180;$('#bG').innerHTML=(10*Math.log10(N)).toFixed(1)+'<em>dB</em>';
+ const hp=N>1?.886/(N*d*Math.cos(t1))*180/Math.PI:180;$('#bW').innerHTML=(hp>120?'omni':hp.toFixed(0)+'<em>°</em>');
+ const grating=d>1/(1+Math.abs(Math.sin(t1)))+1e-9;
+ if(BF.u===2){const w=wFor(BF.a1),x=20*Math.log10(Math.max(AF(w,BF.a2),1e-4)/AF(w,BF.a1));$('#bXl').textContent='Leakage from beam A toward client B';$('#bX').innerHTML=x.toFixed(1)+'<em>dB'+(x<-13?', good isolation':', clients too close')+'</em>'}
+ else{$('#bXl').textContent='Grating lobes';$('#bX').innerHTML=grating?'<span class="pill p-pr">Present: spacing too wide for this angle</span>':'<span class="pill p-ex">None</span>'}}
+function beamFrame(t){const N=BF.N,n=FXc*FYc,D=bImg.data,wt=t*5;
+ for(let c=0;c<n;c++){let s=0;for(let e=0;e<N;e++){const k=e*n+c;s+=BA[e]*Math.cos(wt-KR[k]+BPH[e])*INV[k]}let v=Math.tanh(s*DS[c]/BNORM*.8);v=clamp(v*Math.abs(v)*1.7,-1,1);const li=Math.round((v+1)*127.5)*3,o=c*4;D[o]=DIV[li];D[o+1]=DIV[li+1];D[o+2]=DIV[li+2];D[o+3]=255}
+ bOc.putImageData(bImg,0,0);const x=beamCtx;x.imageSmoothingEnabled=true;x.drawImage(bOff,0,0,BW,BH);const sc=BW/FXc;
+ const ax=ACX*sc,ay=ACY*sc;
+ const angs=BF.u===1?[[BF.a1,'#4fd8ff','A']]:[[BF.a1,'#4fd8ff','A'],[BF.a2,'#ffb38a','B']];
+ angs.forEach(([a,col,l])=>{const t=a*Math.PI/180,R=380,X=ax+Math.sin(t)*R,Y=ay-Math.cos(t)*R;x.setLineDash([4,6]);x.strokeStyle=col+'99';x.beginPath();x.moveTo(ax,ay);x.lineTo(X,Y);x.stroke();x.setLineDash([]);
+  x.fillStyle='rgba(4,16,42,.85)';x.strokeStyle=col;x.lineWidth=2;x.beginPath();x.roundRect?x.roundRect(X-11,Y-18,22,36,5):x.rect(X-11,Y-18,22,36);x.fill();x.stroke();x.fillStyle=col;x.fillRect(X-3,Y+11,6,2);
+  x.font='600 13px IBM Plex Sans';x.textAlign='center';x.fillText('Client '+l+'  '+a+'°',X,Y-26);x.lineWidth=1});
+ x.fillStyle='rgba(4,16,42,.8)';x.fillRect(ax-XS[0]*-sc-12,ay-8,(XS[N-1]-XS[0])*sc+24,16);
+ XS.forEach(xs=>{const X=ax+xs*sc;const g=x.createRadialGradient(X,ay,0,X,ay,12);g.addColorStop(0,'#fff');g.addColorStop(1,'rgba(79,216,255,0)');x.fillStyle=g;x.beginPath();x.arc(X,ay,12,0,7);x.fill()});
+ x.fillStyle='#9bb0d6';x.font='12px IBM Plex Sans';x.textAlign='left';x.fillText(N+'-element array, '+BF.d.toFixed(2)+'λ spacing',14,BH-12)}
+let bVis=false;onVisible($('#beamcv'),v=>bVis=v);
+(function bl(ts){requestAnimationFrame(bl);if(bVis&&!reduceMotion)beamFrame(ts/1000)})(0);
+function bfUpd(){BF.N=+$('#bN').value;BF.d=$('#bD').value/100;BF.a1=+$('#bA').value;BF.a2=+$('#bB').value;$('#obN').textContent=BF.N;$('#obD').textContent=BF.d.toFixed(2)+' λ';$('#obA').textContent=BF.a1+'°';$('#obB').textContent=BF.a2+'°';bfSetup();beamFrame(performance.now()/1000)}
+['#bN','#bD','#bA','#bB'].forEach(s=>$(s).addEventListener('input',bfUpd));
+segOn($('#bU'),v=>{BF.u=+v;$('#bB').disabled=v==='1';$('#bBwrap').style.opacity=v==='1'?.4:1;bfUpd()});
+
+/* ================= AIRTIME ================= */
+const AT={n:12,cw:15};const biCtx=fitCanvas($('#bian'),520,260);
+function bianchi(n,cw){const W=cw+1,tau=2/(W+1),pc=1-Math.pow(1-tau,n-1),ptr=1-Math.pow(1-tau,n),ps=n*tau*Math.pow(1-tau,n-1)/ptr,sig=9,Ts=218,Tc=158,P=84;return{pc,S:ps*ptr*P/((1-ptr)*sig+ptr*ps*Ts+ptr*(1-ps)*Tc)}}
+function drawBian(){const c=biCtx,W=520,H=260,L=40,Rr=14,T=14,B=30,x=v=>L+(v-1)/49*(W-L-Rr),y=v=>T+(1-v)*(H-T-B);c.clearRect(0,0,W,H);
+ c.font='10.5px IBM Plex Mono';for(let v=0;v<=1;v+=.25){c.strokeStyle='rgba(154,168,255,.1)';c.beginPath();c.moveTo(L,y(v));c.lineTo(W-Rr,y(v));c.stroke();c.fillStyle='#6479a6';c.textAlign='right';c.fillText((v*100)+'%',L-6,y(v)+4)}
+ c.textAlign='center';[1,10,20,30,40,50].forEach(v=>c.fillText(v,x(v),H-10));
+ const cols={15:'#4fd8ff',31:'#9aa8ff',63:'#7ef0cf'};
+ [15,31,63].forEach(cw=>{c.strokeStyle=cols[cw];c.lineWidth=cw===AT.cw?3:1.5;c.globalAlpha=cw===AT.cw?1:.5;c.beginPath();for(let n=1;n<=50;n++){const v=bianchi(n,cw).pc;n===1?c.moveTo(x(n),y(v)):c.lineTo(x(n),y(v))}c.stroke()});
+ c.globalAlpha=1;c.setLineDash([6,4]);c.strokeStyle='#ffb38a';c.lineWidth=2;c.beginPath();for(let n=1;n<=50;n++){const v=bianchi(n,AT.cw).S;n===1?c.moveTo(x(n),y(v)):c.lineTo(x(n),y(v))}c.stroke();c.setLineDash([]);c.lineWidth=1;
+ const px=x(AT.n);c.strokeStyle='rgba(255,255,255,.3)';c.beginPath();c.moveTo(px,T);c.lineTo(px,H-B);c.stroke();const b=bianchi(AT.n,AT.cw);[[b.pc,cols[AT.cw]],[b.S,'#ffb38a']].forEach(([v,col])=>{c.fillStyle=col;c.beginPath();c.arc(px,y(v),5,0,7);c.fill()});
+ c.textAlign='left';c.font='11.5px IBM Plex Sans';c.fillStyle=cols[AT.cw];c.fillText('collision chance (CW '+AT.cw+')',L+8,T+12);c.fillStyle='#ffb38a';c.fillText('airtime efficiency, dashed',L+8,T+28);
+ $('#oSt').textContent=AT.n;$('#aPc').innerHTML=(b.pc*100).toFixed(1)+'<em>%</em>';$('#aS').innerHTML=(b.S*100).toFixed(0)+'<em>%</em>';$('#aSh').innerHTML=(b.S*143.4/AT.n).toFixed(1)+'<em>Mbps</em>'}
+$('#aN').addEventListener('input',e=>{AT.n=+e.target.value;drawBian()});segOn($('#aCw'),v=>{AT.cw=+v;drawBian()});
+function buildOfdma(){const svg=$('#ofdma'),L=104,W=600-L-14,sc=W/900,uc=['#4fd8ff','#9aa8ff','#7ef0cf','#6aa8ff'];let h='';
+ const lane=(y,lab,sub)=>h+=`<text x="0" y="${y+16}" font-size="13" font-weight="600" fill="#eaf2ff">${lab}</text><text x="0" y="${y+32}" font-size="11.5" fill="#9bb0d6">${sub}</text>`;
+ const blk=(t0,d,y,hh,fill,txt,op=1)=>{h+=`<rect x="${L+t0*sc}" y="${y}" width="${Math.max(1,d*sc-1.5)}" height="${hh}" rx="3" fill="${fill}" opacity="${op}"/>`;if(txt&&d*sc>26)h+=`<text x="${L+(t0+d/2)*sc}" y="${y+hh/2+4}" text-anchor="middle" font-size="10" fill="#04102a" font-weight="600">${txt}</text>`};
+ lane(30,'OFDM','Wi-Fi 5');let t=0;const ends1=[];for(let u=0;u<4;u++){blk(t,101,30,44,'#24407e','',.9);t+=101;blk(t,40,30,44,'#ffb38a','P');t+=40;blk(t,24,30,44,uc[u],'');t+=24;ends1.push(t);t+=16;blk(t,44,30,44,'#7ef0cf','A');t+=44}
+ lane(130,'OFDMA','Wi-Fi 6 / 7');t=0;blk(t,101,130,44,'#24407e','',.9);t+=101;blk(t,44,130,44,'#9aa8ff','Trig');t+=60;blk(t,40,130,44,'#ffb38a','P');t+=40;for(let u=0;u<4;u++)blk(t,96,130+u*11,10,uc[u],'');const e2=t+96;t+=96+16;blk(t,50,130,44,'#7ef0cf','BA');t+=50;
+ h+=`<text x="${L+(e2-48)*sc}" y="190" text-anchor="middle" font-size="10.5" fill="#9bb0d6">4 resource units in parallel</text>`;
+ for(let v=0;v<=900;v+=100)h+=`<line x1="${L+v*sc}" x2="${L+v*sc}" y1="214" y2="220" stroke="#6479a6"/><text x="${L+v*sc}" y="234" text-anchor="middle" font-size="10" fill="#6479a6" font-family="IBM Plex Mono">${v}</text>`;
+ h+=`<line x1="${L}" x2="${L+W}" y1="214" y2="214" stroke="#6479a6"/><text x="${L+W}" y="250" text-anchor="end" font-size="10.5" fill="#6479a6">time, µs</text>`;
+ h+=`<g font-size="11" fill="#9bb0d6"><rect x="${L}" y="258" width="12" height="10" rx="2" fill="#24407e"/><text x="${L+17}" y="267">contention</text><rect x="${L+92}" y="258" width="12" height="10" rx="2" fill="#ffb38a"/><text x="${L+109}" y="267">preamble</text><rect x="${L+178}" y="258" width="12" height="10" rx="2" fill="#4fd8ff"/><text x="${L+195}" y="267">data</text><rect x="${L+240}" y="258" width="12" height="10" rx="2" fill="#7ef0cf"/><text x="${L+257}" y="267">ack</text><rect x="${L+296}" y="258" width="12" height="10" rx="2" fill="#9aa8ff"/><text x="${L+313}" y="267">trigger</text></g>`;
+ h+=`<line id="ph" x1="${L}" x2="${L}" y1="20" y2="214" stroke="#fff" stroke-width="2" opacity=".85"/><text id="c1" x="${L+W}" y="22" text-anchor="end" font-size="11.5" fill="#eaf2ff"></text><text id="c2" x="${L+W}" y="122" text-anchor="end" font-size="11.5" fill="#eaf2ff"></text>`;
+ svg.innerHTML=h;const ph=svg.querySelector('#ph'),c1=svg.querySelector('#c1'),c2=svg.querySelector('#c2');let vis=false;onVisible(svg,v=>vis=v);
+ const set=tt=>{ph.setAttribute('x1',L+tt*sc);ph.setAttribute('x2',L+tt*sc);c1.textContent='delivered '+ends1.filter(e=>tt>=e).length+' / 4';c2.textContent='delivered '+(tt>=e2?4:0)+' / 4'};
+ if(reduceMotion){set(900);return}
+ (function lp(ts){requestAnimationFrame(lp);if(!vis)return;set((ts/1000*150)%1000>900?900:(ts/1000*150)%1000)})(0)}
+
+/* ================= PLAYBOOK ================= */
+const TECH=[
+ ['Channel plan','In 2.4 GHz use only 1, 6 and 11. In 5 and 6 GHz spread neighbours across many 20 to 40 MHz channels.','Target: no same-channel AP heard above −82 dBm',[2,3,2]],
+ ['Transmit power control','Size AP power to the weakest client radio, often a phone near 15 dBm. A hot AP attracts sticky clients and spreads interference.','Target: 15 to 20% cell overlap for roaming',[2,3,2]],
+ ['Channel width','Wider channels raise peak rate but cut the number of clean channels and add 3 dB of noise per doubling.','Target: 20/40 MHz dense, 80 MHz+ sparse',[1,3,1]],
+ ['Band steering','Move dual-band clients off crowded 2.4 GHz onto 5 and 6 GHz, where there is far more spectrum.','Target: most capable clients on 5/6 GHz',[1,3,2]],
+ ['Minimum data rates','Disable 1 to 11 Mbps legacy rates. Beacons and management frames then go out faster and take less airtime.','Target: basic rate 12 or 24 Mbps',[1,2,2]],
+ ['Fast roaming','802.11k neighbour reports, 802.11v transition hints and 802.11r fast transition keep calls alive while walking.','Target: handoff under 50 ms',[2,1,3]],
+ ['OFDMA, BSS coloring, TWT','Wi-Fi 6 tools: parallel small-packet delivery, reuse among overlapping networks, scheduled sleep for IoT.','Target: lower latency under load',[1,3,3]],
+ ['Multi-link operation','Wi-Fi 7 clients use 2.4, 5 and 6 GHz links at once for more throughput or a backup path.','Target: resilience to one busy band',[2,3,3]]];
+$('#techGrid').innerHTML=TECH.map(([t,p,g,imp])=>`<div class="tc"><h4>${t}</h4><p>${p}</p><div class="tgt">${g}</div><div class="imp">${['Coverage','Capacity','Latency'].map((l,i)=>`<span>${l}</span><span class="bar"><i style="width:${imp[i]/3*100}%"></i></span>`).join('')}</div></div>`).join('');
+
+/* ================= NAV ================= */
+const links=$$('nav a.l');const io=new IntersectionObserver(es=>es.forEach(e=>{if(e.isIntersecting)links.forEach(l=>l.classList.toggle('on',l.getAttribute('href')==='#'+e.target.id))}),{rootMargin:'-45% 0px -50% 0px'});$$('section.ch').forEach(s=>io.observe(s));
+
+/* ================= BOOT ================= */
+function boot(){
+ if(window.THREE){GT=glowTex();try{initHero()}catch(e){console.error(e)}}
+ updPhy();drawSpec();drawWidth('5');resetLab();setScale();
+ if(window.THREE){try{initTerrain()}catch(e){console.error(e)}}
+ bfUpd();drawBian();buildOfdma();
+}
+if(document.fonts&&document.fonts.ready)document.fonts.ready.then(boot);else boot();
+</script>
+</body>
+</html>
